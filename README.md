@@ -35,17 +35,17 @@ Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate
 | Pull request to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
 | Push (merge) to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
 | Nightly schedule (`0 2 * * *` UTC, default branch) | Everything (no `--grep`), split over 4 shards, 120-minute timeout | `REMOTE` |
-| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (empty runs `@smoke`, or the whole suite when `shards` is more than 1; `.` always runs everything) | `environment` input |
+| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (defaults to `@smoke`; `.` runs everything) | `environment` input |
 
 Build parameters (manual runs):
 
 | Parameter | Values |
 |---|---|
 | `environment` | `LOCALHOST` → `http://localhost` (runs on a `self-hosted` runner on the Docker host); `REMOTE` → `https://demo.inventree.org` (GitHub-hosted runner). Passed to the tests as `ENV`; the URL comes from `automation/shared/environments.ts` |
-| `tags` | Playwright `--grep` filter. Empty runs `@smoke`, or the whole suite when `shards` is more than 1 |
+| `tags` | Playwright `--grep` filter. Defaults to `@smoke`; use `.` to run everything. Cleared to empty, it runs `@smoke`, or the whole suite when `shards` is more than 1 |
 | `workers` | Parallel workers, passed as `WORKERS`: a number (`4`) or percentage (`50%`). Empty uses the project default (UI `1`, API `1` on CI) |
 | `retries` | Retries per failed test, passed as `RETRIES`, default `0`. Tests that pass only on retry are marked `flaky` in both reports |
-| `shards` | Number of parallel runners per project, 1 to 8 (empty or `1` runs everything in one job). A small `plan` job turns it into a matrix, and shard `N` of `total` runs Playwright `--shard N/total`. With `tags` empty and `shards` above 1, the shards cover the whole suite; a `@smoke` filter would leave only a handful of tests to split |
+| `shards` | Number of parallel runners per project, 1 to 8 (empty or `1` runs everything in one job). A small `plan` job turns it into a matrix, and shard `N` of `total` runs Playwright `--shard N/total`. With `tags` set to `.` and `shards` above 1, the shards cover the whole suite; the default `@smoke` filter would leave only a handful of tests to split |
 
 **Scaling.** Pull requests stay fast with `@smoke`; the nightly run is the regression gate. When the suite outgrows one job, raise `shards`: the workflow fans out one job per project and shard (4 shards means 8 jobs), each with its own `playwright-report-<project>-shard-<n>` and `allure-report-<project>-shard-<n>` artifacts. Reports are per shard and are not merged. Every test owns its data, so shards do not share state. The remaining shared state is the target instance (its global settings and one superuser), so raising `WORKERS` is limited by that instance, not by the framework: the local Docker server drops requests under parallel UI load (see `automation/ui/README.md`).
 

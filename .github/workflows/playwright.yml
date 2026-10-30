@@ -19,9 +19,9 @@ on:
         options: [REMOTE, LOCALHOST]
         default: REMOTE
       tags:
-        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Empty runs @smoke, or the whole suite when shards is more than 1; "." always runs everything'
+        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Use "." to run everything; empty runs @smoke, or the whole suite when shards is more than 1'
         type: string
-        default: ''
+        default: '@smoke'
       workers:
         description: 'Parallel workers: a number (4) or percentage (50%). Empty uses the project default (UI 1, API 1 on CI)'
         type: string
@@ -31,7 +31,7 @@ on:
         type: string
         default: '0'
       shards:
-        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; with tags empty, more than 1 covers the whole suite, not just @smoke'
+        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; shards split only the tests that match tags, so use "." in tags to split the whole suite'
         type: string
         default: ''
   # Nightly full regression against the demo server (REMOTE), split over 4 shards; the workflow runs on the default branch only.

@@ -11,7 +11,6 @@ for (const role of ROLES) {
     const credentials = credentialsFor(role);
     setup.skip(!credentials, missingRoleMessage(role));
     if (!credentials) return;
-    setup.setTimeout(90_000);
 
     await setup.step('POST /api/auth/v1/auth/login with the role credentials', async () => {
       await loginThroughApi(request, credentials.username, credentials.password);
