@@ -50,10 +50,10 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-001: List parts without credentials
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `GET /api/part/?limit=<n>` with no `Authorization` header and no session cookie.
-- **Expected status:** See OQ-EDGE-01.
+- **Expected status:** 401.
 - **Expected business result:** No part data is returned (the body has no `results`).
 - **Requirements:** REQ-EDGE-01
 - **Sources:** schema security schemes for `GET /api/part/`; `docs:api/#authentication`
@@ -61,10 +61,10 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-002: Create a part without credentials
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` with a unique `name` and no credentials; then, authenticated, `GET /api/part/?search=<name>&limit=<n>`.
-- **Expected status:** See OQ-EDGE-01 for the `POST`; 200 for the authenticated `GET`.
+- **Expected status:** 401 for the `POST`; 200 for the authenticated `GET`.
 - **Expected business result:** No part is created: the search returns `count` 0.
 - **Requirements:** REQ-EDGE-01
 - **Sources:** schema `POST /api/part/`; `docs:api/#authentication`
@@ -72,7 +72,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-003: Use an invalid or badly formed token
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `GET /api/part/?limit=<n>` once for each `Authorization` value:
 
@@ -82,7 +82,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
   | Missing prefix | `<random string>` (no `Token ` prefix) |
   | Empty token | `Token ` |
 
-- **Expected status:** See OQ-EDGE-01.
+- **Expected status:** 401 for each variant.
 - **Expected business result:** No part data is returned for any variant.
 - **Requirements:** REQ-EDGE-01
 - **Sources:** schema `tokenAuth` ("required prefix 'Token'"); `docs:api/#using-a-token`
@@ -90,10 +90,10 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-004: Use a revoked token
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned token, issued and then revoked within the test.
 - **Request:** `GET /api/part/?limit=<n>` with `Authorization: Token <revoked token>`.
-- **Expected status:** See OQ-EDGE-01.
+- **Expected status:** 401.
 - **Expected business result:** No part data is returned.
 - **Requirements:** REQ-EDGE-01
 - **Sources:** `docs:api/#tokens` (tokens can be invalidated); schema `tokenAuth`
@@ -132,10 +132,10 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-007: Send a malformed JSON body
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-02
+- **Automation candidate:** Yes, once the application rejects malformed JSON with a 4xx (application finding, OQ-EDGE-02); the test is `fixme` until then
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` with `Content-Type: application/json` and a body that is not valid JSON and contains a unique name token (for example `{"name": "<token>"`), then `GET /api/part/?search=<token>&limit=<n>`.
-- **Expected status:** See OQ-EDGE-02 for the `POST`; 200 for the `GET`.
+- **Expected status:** 400 for the `POST` (observed 500 on local 1.6.3: application finding); 200 for the `GET`.
 - **Expected business result:** No part is created: the search returns `count` 0.
 - **Requirements:** REQ-EDGE-03
 - **Sources:** schema `POST /api/part/` request body media types
@@ -143,7 +143,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-008: Send values of the wrong type
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-02
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` with a unique `name` and one wrong-typed field per request:
 
@@ -155,7 +155,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
   | `tags` | array of string | `"not-an-array"` |
 
   After each request, `GET /api/part/?search=<name>&limit=<n>`.
-- **Expected status:** See OQ-EDGE-02.
+- **Expected status:** 400.
 - **Expected business result:** No part is created for any row.
 - **Requirements:** REQ-EDGE-03
 - **Sources:** schema Part `assembly`, `minimum_stock`, `category`, `tags`
@@ -163,7 +163,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-009: Refer to records that do not exist
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-02
+- **Automation candidate:** Yes
 - **Preconditions:** An ID known not to exist for each referenced type (for example, the ID of a test-owned record created and then deleted).
 - **Request:** One request per row, each with a unique `name`:
 
@@ -174,7 +174,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
   | `POST /api/part/category/` | `parent` | Nonexistent category ID |
 
   After each request, search for the name on the matching list endpoint.
-- **Expected status:** See OQ-EDGE-02.
+- **Expected status:** 400.
 - **Expected business result:** No part or category is created, so no record points to a missing category or location.
 - **Requirements:** REQ-EDGE-03
 - **Sources:** schema Part `category`, `default_location`; Category `parent`
@@ -182,10 +182,10 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-010: Use a method the endpoint does not list
 - **Priority:** P3
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-03
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part.
 - **Request:** `DELETE /api/part/` (the list endpoint) with no body, then `GET /api/part/{id}/` for the test-owned part.
-- **Expected status:** See OQ-EDGE-03 for the `DELETE`; 200 for the `GET`.
+- **Expected status:** 405 for the `DELETE`; 200 for the `GET`.
 - **Expected business result:** No parts are deleted; the test-owned part still exists.
 - **Requirements:** REQ-EDGE-04
 - **Sources:** schema `/api/part/` operations
@@ -262,9 +262,9 @@ All 5 requirements are covered by at least one case.
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-EDGE-01 | Which status is returned for requests with no credentials, an unknown or badly formed token, or a revoked token: 401 or 403? The documentation says users must be authenticated but gives no status; the schema lists only success responses. An earlier local run (README correction log) returned 401 "Token has been revoked" for a revoked token; not yet confirmed by the user. | API-EDGE-001, 002, 003, 004 | Open |
-| OQ-EDGE-02 | Which status and error body are returned for a malformed JSON body, a wrong-typed value, or a reference to a record that does not exist? The schema documents only success responses. | API-EDGE-007, 008, 009 | Open |
-| OQ-EDGE-03 | Which status is returned for a method the endpoint does not list, such as `DELETE /api/part/`? | API-EDGE-010 | Open |
+| OQ-EDGE-01 | Which status is returned for requests with no credentials, an unknown or badly formed token, or a revoked token: 401 or 403? The documentation says users must be authenticated but gives no status; the schema lists only success responses. An earlier local run (README correction log) returned 401 "Token has been revoked" for a revoked token; not yet confirmed by the user. | API-EDGE-001, 002, 003, 004 | Resolved: 401 with `{"detail": ...}` for no credentials, an unknown token, a token without the `Token` prefix, an empty token, and a revoked token. Local 1.6.3, confirmed by user (2026-10-30). |
+| OQ-EDGE-02 | Which status and error body are returned for a malformed JSON body, a wrong-typed value, or a reference to a record that does not exist? The schema documents only success responses. | API-EDGE-007, 008, 009 | Resolved: a wrong-typed value or a reference to a record that does not exist returns 400 (API-EDGE-008, 009), and 400 is the expected status for a malformed JSON body (API-EDGE-007). Local 1.6.3, confirmed by user (2026-10-30). **Application finding:** a malformed JSON body returned 500 (`{"error": "AttributeError", ...}`) instead of 400, so API-EDGE-007 is `fixme` and fails against the current build. |
+| OQ-EDGE-03 | Which status is returned for a method the endpoint does not list, such as `DELETE /api/part/`? | API-EDGE-010 | Resolved: 405 `Method "DELETE" not allowed.`. Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-EDGE-04 | Which status is returned when deleting a locked part with locking enabled? The documentation says it cannot be deleted but gives no status. | API-EDGE-011 | Open |
 | OQ-EDGE-05 | Can the fields of a locked part be edited? The schema describes `locked` as "Locked parts cannot be edited", but `docs:part/#locked-parts` lists only delete, BOM, and parameter restrictions. | API-EDGE-013 | Open |
 | OQ-EDGE-06 | Are duplicate category names under the same parent rejected, and with which status? Neither the schema nor the documentation states a uniqueness rule. | API-EDGE-015 | Open |

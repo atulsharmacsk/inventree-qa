@@ -77,7 +77,23 @@ test.describe('Parts list', () => {
     });
 
     test.fixme('API-LIST-003: offset beyond the last record (blocked by OQ-LIST-01)', async () => {});
-    test.fixme('API-LIST-004: request without limit (blocked by OQ-LIST-02)', async () => {});
+    // Application finding (OQ-LIST-02): without `limit` the server returns a bare array, not the documented paginated object.
+    test.fixme('API-LIST-004: request without limit (application finding: the response is an unpaginated array)', async ({ parts, categories }) => {
+      const category = await test.step('Setup: a category with one part', async () => {
+        const category = await categories.createOrFail(newCategory());
+        await parts.createOrFail(newPart({ category: category.pk }));
+        return category;
+      });
+
+      const response = await test.step('GET /api/part/ with the category and no limit', async () => {
+        return await parts.listWithoutLimit({ category: category.pk });
+      });
+
+      await test.step('Check the response is the documented paginated list', async () => {
+        expect(response.status()).toBe(200);
+        checkPartList(await response.json());
+      });
+    });
   });
 
   test.describe('Search', () => {
@@ -179,7 +195,24 @@ test.describe('Parts list', () => {
       }
     });
 
-    test.fixme('API-LIST-009: parts without a category (blocked by OQ-LIST-06)', async () => {});
+    // Application finding (OQ-LIST-06): with the default cascade=true, category=null returns every part, not only uncategorized ones.
+    test.fixme('API-LIST-009: parts without a category (application finding: category=null returns all parts)', async ({ parts, categories }) => {
+      const token = uniqueName('pw-list');
+      const { uncategorized } = await test.step('Setup: a part with no category and a part in a category, sharing a name token', async () => {
+        const category = await categories.createOrFail(newCategory());
+        const uncategorized = await parts.createOrFail(newPart({ name: `${token}-uncategorized` }));
+        await parts.createOrFail(newPart({ name: `${token}-categorized`, category: category.pk }));
+        return { uncategorized };
+      });
+
+      const response = await test.step('GET /api/part/ with category=null and the token', async () => {
+        return await parts.listFiltered({ category: 'null', search: token });
+      });
+
+      await test.step('Check only the part without a category is returned', async () => {
+        await expectPartsListed(response, [uncategorized]);
+      });
+    });
 
     test('API-LIST-010: exact and regular-expression text filters', async ({ parts, categories }) => {
       const token = uniqueName('pw-list');

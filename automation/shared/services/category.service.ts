@@ -46,8 +46,26 @@ export class CategoryService {
     return this.request.put(`/api/part/category/${id}/`, { data: category });
   }
 
+  /** For rejection checks: sends a body `NewCategory` cannot express (wrong type, `null`, missing field). */
+  createInvalid(body: Record<string, unknown>): Promise<APIResponse> {
+    return this.create(body as NewCategory);
+  }
+
+  updateInvalid(id: number, body: Record<string, unknown>): Promise<APIResponse> {
+    return this.request.patch(`/api/part/category/${id}/`, { data: body });
+  }
+
+  replaceInvalid(id: number, body: Record<string, unknown>): Promise<APIResponse> {
+    return this.request.put(`/api/part/category/${id}/`, { data: body });
+  }
+
   delete(id: number, options: CategoryDeleteOptions = KEEP_PARTS_AND_CHILDREN): Promise<APIResponse> {
     return this.request.delete(`/api/part/category/${id}/`, { data: options });
+  }
+
+  /** Sends `DELETE` exactly as the published schema describes it: no request body. */
+  deleteWithoutBody(id: number): Promise<APIResponse> {
+    return this.request.delete(`/api/part/category/${id}/`);
   }
 
   /** For test setup: creates a category and stops the test if that fails. */

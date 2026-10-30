@@ -88,11 +88,11 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-004: Request without limit
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-LIST-02
+- **Automation candidate:** Yes, once the application returns the documented paginated list without `limit` (application finding, OQ-LIST-02); the test is `fixme` until then
 - **Preconditions:** As API-LIST-001.
 - **Request:** `GET /api/part/?category=<id>`
-- **Expected status:** See OQ-LIST-02.
-- **Expected business result:** See OQ-LIST-02.
+- **Expected status:** 200.
+- **Expected business result:** The response is the documented paginated list (`count`, `next`, `previous`, `results`). Observed on local 1.6.3: a bare array (application finding).
 - **Requirements:** REQ-LIST-01
 - **Sources:** schema `GET /api/part/`; local OpenAPI schema (`/api/schema/`, API 561)
 
@@ -161,11 +161,11 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-009: Parts without a category
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-LIST-06
+- **Automation candidate:** Yes, once `category=null` returns only uncategorized parts (application finding, OQ-LIST-06); the test is `fixme` until then
 - **Preconditions:** Two test-owned parts whose names share a unique token: `U` with no category, and `K` in a test-owned category.
 - **Request:** `GET /api/part/?category=null&search=<token>&limit=<n>`
 - **Expected status:** 200
-- **Expected business result:** See OQ-LIST-06.
+- **Expected business result:** Only `U` is returned. Observed on local 1.6.3 (default `cascade=true`): both `U` and `K` (application finding).
 - **Requirements:** REQ-LIST-04
 - **Sources:** schema `GET /api/part/` `category`; local 1.6.3 observation (OQ-LIST-06)
 
@@ -284,8 +284,8 @@ All 9 requirements are covered by at least one case. Search fields not covered b
 | ID | Question | Affects | Status |
 |---|---|---|---|
 | OQ-LIST-01 | What does an `offset` beyond the last record return: 200 with empty `results`, or an error? The schema does not say. | API-LIST-003 | Open |
-| OQ-LIST-02 | What is returned when `limit` is omitted? The local OpenAPI schema marks `limit` as required; an earlier local run without it returned an unpaginated array (README correction log, API-PART-007). Not yet confirmed by the user as intended behaviour. | API-LIST-004 | Open |
+| OQ-LIST-02 | What is returned when `limit` is omitted? The local OpenAPI schema marks `limit` as required; an earlier local run without it returned an unpaginated array (README correction log, API-PART-007). Not yet confirmed by the user as intended behaviour. | API-LIST-004 | Resolved as an application finding, confirmed by the user (2026-10-30): without `limit` the server returns a bare array instead of the documented paginated list, although the schema marks `limit` required. Local 1.6.3. |
 | OQ-LIST-03 | Which fields does `ordering` accept, and is `name` one of them? The schema gives no list. | API-LIST-015 | Open |
 | OQ-LIST-04 | Do `created_after` and `created_before` filter on the creation date or the update date? The schema names them "created" but describes them as "Updated after" and "Updated before"; the date format is not stated. | API-LIST-014 | Open |
 | OQ-LIST-05 | Is a part with no stock at all (total 0, below its minimum) included by `low_stock=true`, or only by `depleted_stock`? Neither filter is defined in the schema. | API-LIST-012 | Open |
-| OQ-LIST-06 | Should `category=null` return only parts without a category? The schema describes `category` as "Filter by numeric category ID or the literal 'null'" and does not mention `cascade`. On local 1.6.3 the request returned parts that have a category as well as parts without one. In the local source (`part/api.py`, `filter_category`), `null` filters to uncategorized parts only when `cascade=false`; `cascade` defaults to true, and then the whole list is returned. Documented expectation: only uncategorized parts. Not yet confirmed by the user as intended behaviour. | API-LIST-009 | Open |
+| OQ-LIST-06 | Should `category=null` return only parts without a category? The schema describes `category` as "Filter by numeric category ID or the literal 'null'" and does not mention `cascade`. On local 1.6.3 the request returned parts that have a category as well as parts without one. In the local source (`part/api.py`, `filter_category`), `null` filters to uncategorized parts only when `cascade=false`; `cascade` defaults to true, and then the whole list is returned. Documented expectation: only uncategorized parts. Not yet confirmed by the user as intended behaviour. | API-LIST-009 | Resolved as an application finding, confirmed by the user (2026-10-30): with the default `cascade=true`, `category=null` returns every part, not only uncategorized ones. Local 1.6.3. |
