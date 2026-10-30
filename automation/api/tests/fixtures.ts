@@ -4,6 +4,12 @@ import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
 import { PartService } from '../../shared/services/part.service';
+import { SettingsService } from '../../shared/services/settings.service';
+import { StockItemService } from '../../shared/services/stock-item.service';
+import { StockLocationService } from '../../shared/services/stock-location.service';
+import { CompanyService } from '../src/services/company.service';
+import { ManufacturerPartService } from '../src/services/manufacturer-part.service';
+import { SupplierPartService } from '../src/services/supplier-part.service';
 import { SystemService } from '../src/services/system.service';
 import { withHttpLogging } from '../src/http-logging';
 
@@ -15,6 +21,12 @@ type Fixtures = {
   authenticatedRequest: APIRequestContext;
   parts: PartService;
   categories: CategoryService;
+  stockItems: StockItemService;
+  stockLocations: StockLocationService;
+  companies: CompanyService;
+  supplierParts: SupplierPartService;
+  manufacturerParts: ManufacturerPartService;
+  settings: SettingsService;
   system: SystemService;
 };
 
@@ -58,6 +70,50 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const parts = new PartService(authenticatedRequest);
     await use(parts);
     reportCleanup(testInfo, await parts.deleteCreated());
+  },
+
+  stockLocations: async ({ authenticatedRequest }, use, testInfo) => {
+    const stockLocations = new StockLocationService(authenticatedRequest);
+    await use(stockLocations);
+    reportCleanup(testInfo, await stockLocations.deleteCreated());
+  },
+
+  // Depends on `parts` and `stockLocations` so stock is deleted before the parts and locations it belongs to.
+  stockItems: async ({ authenticatedRequest, parts, stockLocations }, use, testInfo) => {
+    void parts;
+    void stockLocations;
+    const stockItems = new StockItemService(authenticatedRequest);
+    await use(stockItems);
+    reportCleanup(testInfo, await stockItems.deleteCreated());
+  },
+
+  companies: async ({ authenticatedRequest }, use, testInfo) => {
+    const companies = new CompanyService(authenticatedRequest);
+    await use(companies);
+    reportCleanup(testInfo, await companies.deleteCreated());
+  },
+
+  // Depends on `parts` and `companies` so these links are deleted before the records they point to.
+  manufacturerParts: async ({ authenticatedRequest, parts, companies }, use, testInfo) => {
+    void parts;
+    void companies;
+    const manufacturerParts = new ManufacturerPartService(authenticatedRequest);
+    await use(manufacturerParts);
+    reportCleanup(testInfo, await manufacturerParts.deleteCreated());
+  },
+
+  // Also depends on `manufacturerParts` because a supplier part can point to a manufacturer part.
+  supplierParts: async ({ authenticatedRequest, parts, companies, manufacturerParts }, use, testInfo) => {
+    void parts;
+    void companies;
+    void manufacturerParts;
+    const supplierParts = new SupplierPartService(authenticatedRequest);
+    await use(supplierParts);
+    reportCleanup(testInfo, await supplierParts.deleteCreated());
+  },
+
+  settings: async ({ authenticatedRequest }, use) => {
+    await use(new SettingsService(authenticatedRequest));
   },
 
   system: async ({ authenticatedRequest }, use) => {

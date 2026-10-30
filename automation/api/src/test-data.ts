@@ -1,7 +1,33 @@
-import type { NewCategory, NewPart } from '../../shared/models';
+import type { NewCategory, NewPart, NewStockItem, NewStockLocation } from '../../shared/models';
 import { uniqueName } from '../../shared/data';
+import type { NewCompany, NewManufacturerPart, NewSupplierPart } from './models';
 
 export { uniqueName };
+
+/** A valid new company with a unique name. Pass extra fields such as `is_supplier` to add or override them. */
+export function newCompany(extraFields: Partial<NewCompany> = {}): NewCompany {
+  return { name: uniqueName('pw-company'), currency: 'USD', ...extraFields };
+}
+
+/** A supplier part linking `part` to `supplier`, with a unique SKU. */
+export function newSupplierPart(part: number, supplier: number, extraFields: Partial<NewSupplierPart> = {}): NewSupplierPart {
+  return { part, supplier, SKU: uniqueName('pw-sku'), ...extraFields };
+}
+
+/** A manufacturer part linking `part` to `manufacturer`, with a unique MPN. */
+export function newManufacturerPart(part: number, manufacturer: number, extraFields: Partial<NewManufacturerPart> = {}): NewManufacturerPart {
+  return { part, manufacturer, MPN: uniqueName('pw-mpn'), ...extraFields };
+}
+
+/** A valid new stock location with a unique name. */
+export function newStockLocation(extraFields: Partial<NewStockLocation> = {}): NewStockLocation {
+  return { name: uniqueName('pw-location'), ...extraFields };
+}
+
+/** A valid stock item of one unit for `part`. Pass extra fields to override them. */
+export function newStockItem(part: number, extraFields: Partial<NewStockItem> = {}): NewStockItem {
+  return { part, quantity: 1, ...extraFields };
+}
 
 /** A valid new part with a unique name. Pass extra fields to add or override them. */
 export function newPart(extraFields: Partial<NewPart> = {}): NewPart {

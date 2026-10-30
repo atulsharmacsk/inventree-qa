@@ -39,6 +39,8 @@ export type Part = {
   keywords: string | null;
   category: number | null;
   category_name?: string;
+  default_location: number | null;
+  category_default_location: number | null;
   units: string | null;
   barcode_hash: string;
   starred: boolean;
@@ -55,7 +57,10 @@ export type NewPart = {
   revision?: string;
   keywords?: string;
   units?: string;
-  category?: number;
+  category?: number | null;
+  default_location?: number | null;
+  /** Write-only: creates a supplier part for the new part. */
+  initial_supplier?: { supplier: number; sku: string };
   minimum_stock?: number;
   maximum_stock?: number;
   variant_of?: number;
@@ -73,6 +78,24 @@ export type Page<T> = {
 };
 
 export type PartList = Page<Part>;
+
+/** Query parameters of `GET /api/part/` used by the tests; `limit` defaults to `DEFAULT_PAGE_LIMIT`. */
+export type PartFilters = Partial<Record<PartFlag, boolean>> & {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  /** A category ID, or the literal `null` for parts without a category. */
+  category?: number | 'null';
+  cascade?: boolean;
+  IPN?: string;
+  IPN_regex?: string;
+  name_regex?: string;
+  has_ipn?: boolean;
+  has_stock?: boolean;
+  low_stock?: boolean;
+  /** Comma-separated part IDs. */
+  exclude_id?: string;
+};
 
 /** A part category as returned by the API. */
 export type Category = {
