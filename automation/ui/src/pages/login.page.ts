@@ -19,8 +19,18 @@ export class LoginPage {
 
   async login(username: string, password: string): Promise<void> {
     await this.username.fill(username);
-    await this.password.fill(password);
+    await this.fillWithoutStepTitle(this.password, password);
     await this.submit.click();
     await this.page.waitForURL((url) => !url.pathname.includes('login'));
+  }
+
+  // fill() puts the value in the step title (`Fill "..."`), which reports store as plain text; evaluate() does not.
+  private async fillWithoutStepTitle(input: Locator, value: string): Promise<void> {
+    await input.evaluate((element, text) => {
+      const field = element as HTMLInputElement;
+      // React tracks the native setter, so assigning `field.value` directly would not reach component state.
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, text);
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
   }
 }

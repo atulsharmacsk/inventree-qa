@@ -22,6 +22,14 @@ on:
         description: 'Playwright --grep filter, for example @smoke, or "@smoke|API-CAT"'
         type: string
         default: '@smoke'
+      workers:
+        description: 'Parallel workers: a number (4) or percentage (50%). Empty uses the project default (UI 1, API 1 on CI)'
+        type: string
+        default: ''
+      retries:
+        description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
+        type: string
+        default: '0'
 
 permissions:
   contents: read
@@ -50,6 +58,8 @@ jobs:
       # Inputs reach scripts through env, not ${{ }} interpolation, to avoid script injection.
       ENV: ${{ inputs.environment || 'REMOTE' }}
       GREP: ${{ inputs.tags || '@smoke' }}
+      WORKERS: ${{ inputs.workers }}
+      RETRIES: ${{ inputs.retries || '0' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
       SUPERUSER_USERNAME: ${{ secrets.SUPERUSER_USERNAME }}
       SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
@@ -62,7 +72,7 @@ jobs:
 
       - name: Check superuser secrets
         run: |
-          echo "ENV: $ENV, grep: $GREP"
+          echo "ENV: $ENV, grep: $GREP, workers: ${WORKERS:-default}, retries: $RETRIES"
           if [ -z "$SUPERUSER_USERNAME" ] || [ -z "$SUPERUSER_PASSWORD" ]; then
             echo "::error::The $ENV environment needs SUPERUSER_USERNAME and SUPERUSER_PASSWORD secrets"
             exit 1
@@ -112,4 +122,17 @@ jobs:
           path: |
             automation/${{ matrix.project }}/playwright-report/
             automation/${{ matrix.project }}/test-results/
+          retention-days: 7
+
+      - name: Generate Allure report
+        if: ${{ !cancelled() }}
+        run: npm run allure:generate
+
+      # Trace attachments in allure-results are scrubbed by src/global-teardown.ts before the report is built.
+      - name: Upload Allure report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ matrix.project }}
+          path: automation/${{ matrix.project }}/allure-report/
           retention-days: 7

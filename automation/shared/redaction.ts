@@ -21,12 +21,30 @@ export function hideSecrets(text: string): string {
   return result;
 }
 
-/** All `trace.zip` files below the given output folders. */
+// allure-playwright copies each trace into its results folder as `<uuid>-attachment.zip`.
+const isTraceArchive = (entry: string): boolean => /^(trace|.+-attachment)\.zip$/.test(path.basename(entry));
+
+/** All Playwright trace archives (including Allure copies) below the given folders. */
 export async function findTraceFiles(folders: Iterable<string>): Promise<string[]> {
   const found: string[] = [];
   for (const folder of new Set(folders)) {
     const entries = await fs.readdir(folder, { recursive: true }).catch(() => []);
-    found.push(...entries.filter((entry) => path.basename(entry) === 'trace.zip').map((entry) => path.join(folder, entry)));
+    found.push(...entries.filter(isTraceArchive).map((entry) => path.join(folder, entry)));
   }
   return found;
+}
+
+// Failure page snapshots (error-context.md) show typed field values; Allure stores steps and attachments as files.
+const TEXT_ARTIFACT = /\.(md|json|txt)$/i;
+
+/** Rewrites text artifacts below the given folders with secrets hidden. */
+export async function redactTextFiles(folders: Iterable<string>): Promise<void> {
+  for (const folder of new Set(folders)) {
+    const entries = await fs.readdir(folder, { recursive: true }).catch(() => []);
+    for (const file of entries.filter((entry) => TEXT_ARTIFACT.test(entry)).map((entry) => path.join(folder, entry))) {
+      const original = await fs.readFile(file, 'utf8');
+      const cleaned = hideSecrets(original);
+      if (cleaned !== original) await fs.writeFile(file, cleaned);
+    }
+  }
 }
