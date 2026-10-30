@@ -20,7 +20,8 @@ export class NavigationComponent {
     return this.mainTabs.getByRole('tab', { name, exact: true });
   }
 
+  // 1.6.x wraps a link inside each tab; 1.7.0 dev renders the tab alone, so click the tab.
   async open(name: MainSection): Promise<void> {
-    await this.section(name).getByRole('link').click();
+    await this.section(name).click();
   }
 }
