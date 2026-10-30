@@ -28,8 +28,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    // One file, one worker: the roles log in one after another so the demo never sees simultaneous logins.
-    { name: 'setup', testMatch: /auth\.setup\.ts/, fullyParallel: false },
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'ui',
       testIgnore: /auth\.setup\.ts/,
