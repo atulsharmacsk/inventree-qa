@@ -4,6 +4,8 @@ import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
 import { PartService } from '../../shared/services/part.service';
+import { SettingsService } from '../../shared/services/settings.service';
+import { StockItemService } from '../../shared/services/stock-item.service';
 import { NavigationComponent } from '../src/components/navigation.component';
 import { storageStatePath } from '../src/models/paths';
 import { PartDetailPage } from '../src/pages/part-detail.page';
@@ -16,6 +18,8 @@ type Fixtures = {
   apiRequest: APIRequestContext;
   parts: PartService;
   categories: CategoryService;
+  stockItems: StockItemService;
+  settings: SettingsService;
   navigation: NavigationComponent;
   partsList: PartsListPage;
   partDetail: PartDetailPage;
@@ -64,6 +68,18 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const parts = new PartService(apiRequest);
     await use(parts);
     reportCleanup(testInfo, await parts.deleteCreated());
+  },
+
+  // Depends on `parts` so stock is deleted before the parts it belongs to.
+  stockItems: async ({ apiRequest, parts }, use, testInfo) => {
+    void parts;
+    const stockItems = new StockItemService(apiRequest);
+    await use(stockItems);
+    reportCleanup(testInfo, await stockItems.deleteCreated());
+  },
+
+  settings: async ({ apiRequest }, use) => {
+    await use(new SettingsService(apiRequest));
   },
 
   navigation: async ({ page }, use) => {

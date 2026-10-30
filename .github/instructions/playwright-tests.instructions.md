@@ -35,7 +35,7 @@ This table describes the current layout. Check the files before adding a layer, 
 - Assert status codes, response schema (required properties and their types), and business effects (re-read the record after a write).
 - Use data-driven loops over typed tables for flags, validation, boundaries, and filters. Generated titles must be unique.
 - Use `test.fixme('<CASE-ID>: ... (blocked by OQ-...)')` for cases blocked by an open question. Use `test.fail` with an annotation for a user-confirmed application finding. Never weaken an assertion to make a test pass.
-- API tests: reuse `authenticatedRequest`. For unauthenticated cases, add a fixture with a credential-free context instead of changing the existing one.
+- API tests: reuse `authenticatedRequest`. It is wrapped by `src/http-logging.ts`, which attaches every request and response (method, URL, params, body, status) to the step that made it, with secrets hidden and auth headers omitted. For unauthenticated cases, add a fixture with a credential-free context instead of changing the existing one.
 - UI tests: use accessible locators (`getByRole`, `getByLabel`, `getByText`), then test IDs. Use CSS only with a comment explaining why. Use web-first assertions and condition-based waits; never use fixed sleeps.
 - Create uniquely named, test-owned data through factories, and clean up only that data. Tests must run independently and in parallel, with no state shared between them.
 - Do not invent endpoints or expected status codes; verify them against the schema or the running instance.

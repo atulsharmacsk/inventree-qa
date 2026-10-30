@@ -5,6 +5,7 @@ import { credentialsFor, missingRoleMessage, type Role } from '../../shared/role
 import { CategoryService } from '../../shared/services/category.service';
 import { PartService } from '../../shared/services/part.service';
 import { SystemService } from '../src/services/system.service';
+import { withHttpLogging } from '../src/http-logging';
 
 // Everything a test can ask for by name, for example `async ({ parts }) => { ... }`.
 type Fixtures = {
@@ -36,13 +37,13 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
 
   apiTokens: [async ({ playwright }, use) => withApiTokens(playwright.request, 'playwright-api', use), { scope: 'worker' }],
 
-  // An HTTP client that sends the role's token with every request.
-  authenticatedRequest: async ({ playwright, baseURL, apiTokens, role }, use) => {
+  // An HTTP client that sends the role's token with every request and logs each call to the report.
+  authenticatedRequest: async ({ playwright, baseURL, apiTokens, role }, use, testInfo) => {
     const request = await playwright.request.newContext({
       baseURL,
       extraHTTPHeaders: { Authorization: `Token ${await apiTokens(role)}` },
     });
-    await use(request);
+    await use(withHttpLogging(request, testInfo));
     await request.dispose();
   },
 

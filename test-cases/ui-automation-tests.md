@@ -24,7 +24,7 @@ Part attributes is ordered before Part categories because Part CRUD automation (
 |---|---|---|---|---|
 | A | `/ui-automation Setup: auth, fixtures, page objects, redaction` | tests/auth.setup.ts, tests/fixtures.ts, tests/smoke.spec.ts | Framework only; smoke checks SMOKE-001, SMOKE-002 | Done (3 passed) |
 | B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005; fixme: 009 (setting), 013 (non-superuser), UI-IMPORT-007 (OQ-CREATE-05), UI-IMPORT-008 (OQ-CREATE-06); deferred: UI-IMPORT-002, 004 (file upload) | Done (3 passed, 4 fixme) |
-| C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR edit, deactivate; delete fixme until OQ-PART-02 | To do |
+| C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR-008, 012 (edit form, deactivate), 016 (delete inactive part), 017 (skips itself when `PART_ENABLE_LOCKING` is off); fixme: 013 (OQ-ATTR-05) | Done (4 passed, 1 fixme) |
 | D | `/ui-automation Part detail view tabs P1` | tests/part.tabs.spec.ts | UI-TAB-005, 006, 011, 015, 019; fixme: 013, 018 (part locking setting) | To do |
 | E | `/ui-automation Cross-functional flow` | tests/part.flow.spec.ts | UI-CREATE-015: create part, add parameter, create stock, verify in category view | To do |
 | F | `/ui-automation <area> P1` | tests/part.<area>.spec.ts | P1 cases of UI-CAT, UI-UNIT, UI-REV as they are drafted | To do |

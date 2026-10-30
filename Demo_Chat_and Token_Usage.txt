@@ -1,0 +1,575 @@
+Log Info
+
+
+UI Manual-
+11:27 AM
+2m 48s
+•
+Claude Opus 5.5 • 79.1 credit
+
+
+API manual
+11:32 AM
+3m 25s
+•
+Claude Opus 5.5 • 392.5 credit
+
+API automation-11:55 AM
+2m 23s•
+Claude Opus 5.5 • 480.8 credits
+
+
+UI Automation-11:45 AM
+10m 50s
+•
+Claude Opus 5.5 • 994.1 cred
+
+
+
+Chat Session:
+User: /ui-manual-tests Units of measure
+
+GitHub Copilot: Updated todo list
+
+Read 
+
+Read 
+
+
+
+Searched for text `unit` (`**/README.md`), 3 results
+
+Read , lines 1 to 120
+
+Fetched https://docs.inventree.org/en/stable/concepts/units/
+
+
+
+
+
+Fetched https://docs.inventree.org/en/stable/part/
+
+Fetched https://docs.inventree.org/en/stable/concepts/parameters/
+
+Searched for regex `[Uu]nit|pack|OQ-CREATE-09` (`**/test-cases/ui/**`), 38 results
+
+Read 
+
+Read , lines 228 to 265
+
+
+
+Fetched https://docs.inventree.org/en/stable/part/views/
+
+Created 
+
+Replacing 2 lines with 2 lines in 
+
+
+```
+
+```
+I've written the Units of measure area as 20 manual UI cases in `units-of-measure.md` and updated its row and the totals in `ui-manual-tests.md`. The cases cover all 14 requirements I extracted from the docs. Nothing was checked against the local 1.6.3 instance.
+
+**Pages used:** `concepts/units/`, `part/`, `part/views/`, `concepts/parameters/`. All four loaded.
+
+**Cases by priority:**
+
+| Sub-area | P1 | P2 | P3 |
+|---|---|---|---|
+| Part units | 0 | 1 | 1 |
+| Custom units (*Physical Units* settings tab) | 1 | 2 | 3 |
+| Supplier part pack quantity units | 2 | 1 | 1 |
+| Parameter units and value notations | 0 | 4 | 4 |
+| **Total** | **3** | **8** | **9** |
+
+Some unit checks already exist in other areas, so I referenced them instead of repeating them:
+- Valid and wrong-case part units: UI-CREATE-007 and UI-CREATE-008.
+- Incompatible parameter units: UI-TAB-016.
+- Sorting and filtering by unit: UI-CAT-011, UI-CAT-014 and UI-CAT-019.
+
+**Open questions (7 new, all Open).** Seven cases have no expected result until these are answered:
+- **OQ-UNIT-01:** which fields the custom unit form has, and whether the *Physical Units* tab exists in 1.6.3. This affects UI-UNIT-003 to 008.
+- **OQ-UNIT-02:** what happens to a custom unit saved with an empty definition (it should be `1` for no dimension).
+- **OQ-UNIT-03:** what happens when a custom unit that a part uses is deleted.
+- **OQ-UNIT-04:** where the UI shows the pack quantity converted to the part's unit.
+- **OQ-UNIT-05:** whether `100 ft` is accepted as a pack quantity for a part with no unit.
+- **OQ-UNIT-06:** what happens with a lowercase `1e3`.
+- **OQ-UNIT-07:** what happens with a combined value such as `3'6"`.
+
+Two existing open questions also apply: OQ-CREATE-09 (default unit, UI-UNIT-001) and OQ-TAB-08 (parameter unit validation setting, UI-UNIT-015 to 020).
+
+UI-UNIT-007 (wrong-case custom unit name) and UI-UNIT-014 (`KG` as a parameter template unit) assume an invalid unit is rejected with a form error. That is the same unconfirmed assumption already noted in the README for UI-CREATE-008.
+
+**Required negative and boundary scenarios:** none of the three in the index (duplicate IPN, inactive part restrictions, revision-of-revision) belong to this area, so that table is unchanged.
+
+Two related entries are now out of date, and I left them alone because those files were outside this run:
+- OQ-CREATE-09 in `part-creation.md` still says it affects no case yet; it now affects UI-UNIT-001.
+- The README's open findings still say "UI areas: 5 of 6 drafted"; it is now 6 of 6.
+
+Created 2 todos
+
+Made changes.
+
+User: /api-manual-tests api/field-validation.md
+
+GitHub Copilot: Updated todo list
+
+Read 
+
+Read 
+
+Read 
+
+Searched for regex `### API-|OQ-[A-Z]+-\d+ \|` (`**/test-cases/api/**`), 102 results
+
+Read , lines 1 to 80
+
+
+
+Fetched https://docs.inventree.org/en/stable/api/schema/part/
+
+Read , lines 1 to 400
+
+Read 
+
+Searched for regex `Field-level validation|maxLength|read-only|readOnly|REQ-ACAT-0\d \|` (`**/test-cases/api/**`), 18 results
+
+
+
+Fetched https://docs.inventree.org/en/stable/api/schema/company/
+
+Searched for regex `REQ-VAL|OQ-VAL|API-VAL` (`**/test-cases/**`), 3 results
+
+Created 
+
+Replacing 3 lines with 4 lines in 
+
+
+```
+
+```
+I've written 21 manual API cases for the field-level validation area in `field-validation.md` and updated its row, the totals and the automation candidates in `api-manual-tests.md`. Nothing was run against the local instance; every expected result comes from the API 561 schema or the docs.
+
+The two schema pages used were `api/schema/part/` and `api/schema/company/`. Both document API version 561, which matches the local instance.
+
+**Endpoints:**
+- `POST /api/part/`
+- `PATCH` and `PUT /api/part/{id}/`
+- `POST /api/part/category/`
+- `PATCH` and `PUT /api/part/category/{id}/`
+- `GET` on all of the above, to check stored values and that nothing was created
+- `POST /api/company/part/`, for the supplier part `SKU` length limit, because the relational-integrity file points that check here
+
+**Cases by group:**
+
+| Group | P1 | P2 | P3 | Total |
+|---|---|---|---|---|
+| Required fields | 2 | 2 | 0 | 4 |
+| Maximum lengths | 2 | 3 | 2 | 7 |
+| Nullable fields | 0 | 3 | 1 | 4 |
+| Read-only and write-only fields | 2 | 1 | 1 | 4 |
+| `default_expiry` minimum and `SKU` length | 0 | 0 | 2 | 2 |
+| **Total** | **6** | **9** | **6** | **21** |
+
+**Automation candidates:**
+- **Ready now (4):** API-VAL-005, 011 and 019, plus API-VAL-008 for every field except `icon`.
+- **Ready once an open question is answered:** the other 17 cases.
+
+The schema only lists success responses, so every case where a value should be rejected leaves the status code to an open question. Those cases still check the outcome: nothing is created or changed. This is the same approach the edge-cases area uses.
+
+**Open questions (5, all Open):**
+- **OQ-VAL-01:** what status and error body come back for a value that fails validation (missing, too long, `null` where not allowed, bad URL, below the minimum).
+- **OQ-VAL-02:** whether read-only fields sent in a request are ignored or rejected.
+- **OQ-VAL-03:** whether an empty or whitespace-only `name` is accepted; the schema gives a maximum length but no minimum.
+- **OQ-VAL-04:** what makes a category `icon` value valid.
+- **OQ-VAL-05:** whether a text field set to `null` comes back as `null` or `""`.
+
+**Left out on purpose:**
+- **`units` at its 20-character limit:** a value that long must also be a real unit, so a failure wouldn't show whether the length rule caused it. Only the 21-character rejection is tested.
+- **Cases other files already cover:** for example wrong types and bad JSON in edge cases, and clearing `category` with `null` in relational integrity. The file lists each one and points to the case that covers it.
+
+The plan in `api-automation-tests.md` still marks this area "To do". I didn't change it because it is outside this step.
+
+Updated todo list
+
+Made changes.
+
+User: /ui-automation Part attributes P1
+
+GitHub Copilot: Updated todo list
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Searched for files matching `**/automation/{ui/src,ui/tests,ui/scripts,shared}/**`, 20 matches
+
+Searched for files matching `**/automation/{ui/src/components,shared/services}/**`, 4 matches
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Ran terminal command: cd c:\Users\sharmatl\Projects\InvenTree\submission\automation\ui; npm run snapshot -- /web/part/1/ action-menu-part-actions 2>&1 | Select-Object -First 150
+
+Read 
+
+Read 
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/category/index/parts 2>&1 | Select-Object -First 80
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/category/index/parts 2>&1 | Select-String -Pattern '/url: /web/part/\d+' | Select-Object -First 5
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/category/index/parts 2>&1 | Select-String -Pattern 'row|cell' | Select-Object -First 30
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/category/index/parts pw-part-1793266722773-eg86yx action-menu-part-actions 2>&1 | Select-Object -Skip 40 -First 200
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/124/ action-menu-part-actions 2>&1 | Select-String -Pattern 'menu' -Context 0,2
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run snapshot -- /web/part/124/ action-menu-part-actions Edit 2>&1 | Select-String -Pattern 'dialog' -Context 0,200 | Select-Object -First 1 | ForEach-Object { $_.ToString() }
+
+Ran terminal command: $env:ENV='LOCALHOST'; $o = npm run snapshot -- /web/part/124/ action-menu-part-actions Edit 2>&1; $i = ($o | Select-String -Pattern 'dialog "Edit Part"').LineNumber; $o | Select-Object -Skip ($i-1) | Select-String -Pattern 'checkbox|switch|textbox|button|alert' | ForEach-Object { $_.Line }
+
+Searched for files matching `c:/Users/sharmatl/Projects/InvenTree/inventree-app/src/frontend/src/forms/PartForms.tsx`, no matches
+
+Ran terminal command: Get-ChildItem -Path c:\Users\sharmatl\Projects\InvenTree -Directory | Select-Object Name; Get-ChildItem -Recurse -Filter PartForms.tsx -Path c:\Users\sharmatl\Projects\InvenTree -ErrorAction SilentlyContinue | Select-Object -First 3 FullName
+
+Ran terminal command: Get-ChildItem -Path c:\Users\sharmatl\Projects\InvenTree\inventree-app | Select-Object Name
+
+Ran terminal command: Get-ChildItem -Recurse -Path c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src -Include PartForms.tsx,StockForms.tsx,ApiFormField.tsx,BooleanField.tsx -ErrorAction SilentlyContinue | Select-Object FullName
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+Ran terminal command: Get-Content c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src\components\forms\fields\BooleanField.tsx; Select-String -Path c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src\forms\PartForms.tsx -Pattern 'active|locked|is_template|trackable' | Select-Object -First 30 | ForEach-Object { "$($_.LineNumber): $($_.Line)" }
+
+Read 
+
+Ran terminal command: $f = Get-ChildItem -Recurse -Path c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src\pages\part -Filter PartDetail.tsx | Select-Object -First 1; Select-String -Path $f.FullName -Pattern 'deletePart|useDeleteApiFormModal|DeleteItemAction|locked|active' | ForEach-Object { "$($_.LineNumber): $($_.Line)" }
+
+Read 
+
+Read 
+
+Ran terminal command: Get-ChildItem -Recurse -Path c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src\hooks -Filter UseForm.tsx | ForEach-Object { Select-String -Path $_.FullName -Pattern 'submitText|method|Delete' | ForEach-Object { "$($_.LineNumber): $($_.Line)" } }
+
+Read 
+
+Ran terminal command: $s='c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\src'; Select-String -Path "$s\forms\StockForms.tsx" -Pattern 'serial_numbers|title: t`Add Stock|Create Stock|useStockFields' | Select-Object -First 15 | ForEach-Object { "$($_.LineNumber): $($_.Line)" }; Get-ChildItem -Recurse "$s\tables\stock" -Filter StockItemTable.tsx | ForEach-Object { Select-String -Path $_.FullName -Pattern 'tooltip=|title: t`|AddItemButton|Add Stock' | ForEach-Object { "T $($_.LineNumber): $($_.Line)" } }; Get-ChildItem -Recurse "$s\components\buttons" -Filter AddItemButton.tsx | Get-Content; Get-ChildItem -Recurse "$s\components\forms\fields" -Filter NumberField.tsx -ErrorAction SilentlyContinue | Select-Object FullName
+
+Ran terminal command: $s='c:\Users\sharmatl\Projects\InvenTree\inventree-app\src'; Get-ChildItem -Recurse "$s\frontend\lib" -Filter AddItemButton.tsx | Get-Content; Get-ChildItem -Recurse "$s\frontend\src\components\forms\fields" -Filter NumberField.tsx | Get-Content | Select-String 'aria-label'; Get-Content "$s\frontend\src\forms\StockForms.tsx" | Select-Object -Skip 255 -First 85
+
+Ran terminal command: $b='c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\backend\InvenTree'; Select-String -Path "$b\stock\api.py" -Pattern "serial = |serial_gte|'serial'|def create|return Response|serial_numbers" | Select-Object -First 25 | ForEach-Object { "$($_.LineNumber): $($_.Line)" }; Select-String -Path "$b\common\api.py" -Pattern "settings/global|GlobalSettingsDetail|lookup_field" | Select-Object -First 10 | ForEach-Object { "C $($_.LineNumber): $($_.Line)" }
+
+Ran terminal command: $b='c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\backend\InvenTree'; Get-Content "$b\stock\api.py" | Select-Object -Skip 1180 -First 40; Get-Content "$b\common\api.py" | Select-Object -Skip 1990 -First 20
+
+Ran terminal command: Get-ChildItem -Recurse c:\Users\sharmatl\Projects\InvenTree\inventree-app\src\frontend\lib -Filter ActionButton.tsx | Get-Content | Select-String 'aria-label|identifier' ; Get-Content c:\Users\sharmatl\Projects\InvenTree\submission\automation\ui\src\components\navigation.component.ts
+
+Replacing 9 lines with 40 lines in 
+
+
+```
+
+```
+
+
+Created 
+
+Created 
+
+Now update `PartService` cleanup (newest first, unlock first). 
+
+Replacing 6 lines with 8 lines in 
+
+ 
+
+Created 
+
+
+```
+
+```
+
+
+Created 5 todos
+
+Rewrite `PartFormComponent` on the base, and add the stock and delete dialogs. 
+
+Created 
+
+Ran terminal command: Remove-Item c:\Users\sharmatl\Projects\InvenTree\submission\automation\ui\src\components\part-form.component.ts.new
+
+Replacing 59 lines with 50 lines in 
+
+Created 
+
+Created 
+
+
+```
+
+```
+Now extend `PartDetailPage`. 
+
+Replacing 14 lines with 60 lines in 
+
+ 
+
+Replacing 5 lines with 21 lines in 
+
+
+```
+
+```
+
+```
+
+```
+
+
+Replacing 9 lines with 13 lines in 
+
+Created 
+
+
+```
+
+```
+
+
+Ran terminal command: npm run typecheck 2>&1 | Select-Object -Last 20; cd ..\api; npm run typecheck 2>&1 | Select-Object -Last 20; cd ..\ui
+
+Both pass. Now run the new spec against LOCALHOST. 
+
+Ran terminal command: $env:ENV='LOCALHOST'; npx playwright test tests/part.attributes.spec.ts --reporter=list 2>&1 | Select-Object -Last 60
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run test:ui 2>&1 | Select-Object -Last 30
+
+No matches found.
+
+Replacing 1 lines with 1 lines in 
+
+Replacing 9 lines with 23 lines in 
+
+
+```
+
+```
+
+```
+
+```
+
+
+Starting: *Implement StockItem and settings services* (3/6)
+
+Now the root README: correction log row for the shared cleanup change, and test results. 
+
+Replacing 2 lines with 4 lines in 
+
+
+```
+
+```
+I've added `tests/part.attributes.spec.ts`. Four of the five P1 cases (UI-ATTR-008, 012, 016, 017) pass on the local instance and UI-ATTR-013 is a `test.fixme`. The full UI suite also passes: 12 passed, 4 skipped, no failures and no failed cleanups. Typecheck passes in both the UI and API projects.
+
+| Case | Result | What it checks |
+|---|---|---|
+| UI-ATTR-008 | Passed | Serial `100` used by variant V1 is entered for V2 through Add Stock Item; V2 ends up with no stock item `100`. How the rejection is shown is still OQ-ATTR-04. |
+| UI-ATTR-012 (`@smoke`) | Passed | Part > Edit, turn Active off, save, reload: Active shows "No", the part still opens and its stock item still exists. This also covers editing a part. |
+| UI-ATTR-013 | Skipped (`fixme`) | Blocked by OQ-ATTR-05 (which actions an inactive part blocks). |
+| UI-ATTR-016 | Passed | An inactive part is deleted from Part Actions > Delete and no longer appears in its category. |
+| UI-ATTR-017 | Passed | A locked, inactive part can't be deleted and its page still opens. The test reads the `PART_ENABLE_LOCKING` setting and skips itself when it's off; tests never change settings. |
+
+**Framework changes:**
+- **Dialogs:** a new shared base, `ModalFormComponent`, holds the dialog, field and submit code. `PartFormComponent` now builds on it without changing its methods. New dialogs for Add Stock Item and the delete confirmation use the same base.
+- **Part page:** it can now open the Edit and Delete actions and the Stock tab's Add Stock Item form.
+- **Shared services:** I added `StockItemService` and a read-only `SettingsService`, exposed as the `stockItems` and `settings` fixtures. Stock created by a test is deleted before its parts.
+- **Part cleanup:** this also changes the API project. It now deletes newest first, so variants go before their template, and unlocks each part before deleting it. Both READMEs and the run plan (Run C marked Done) are updated, with this change logged in the root README.
+
+The selectors come from the local app and the read-only InvenTree source.
+
+**Two things you should know:**
+- **Wrong server:** `.env` currently points tests at the public demo server. My first page inspection went there (read-only). Every run after that set `ENV=LOCALHOST` in the shell; reset `.env` if you want local to be the default.
+- **Part locking:** locking appears to be on locally, because UI-ATTR-017 ran instead of skipping. The run plan keeps UI-TAB-013 and UI-TAB-018 as `fixme` on the assumption that it's off, so that is worth rechecking before Run D.
+
+**Decision for you (OQ-ATTR-01):** locally, Active is changed with a switch in the Part > Edit form. The docs only describe the Details-tab part options, and only for Template. Is the Edit form the intended way to change Active? If yes, I'll mark OQ-ATTR-01 resolved for Active and update UI-ATTR-012 and 014. I haven't changed the manual cases yet.
+
+Completed: *Rewrite PartFormComponent and add dialogs* (3/5)
+
+Made changes.
+
+User: /api-automation Field-level validation
+
+GitHub Copilot: Updated todo list
+
+Read 
+
+Searched for files matching `**/automation/api/{src,tests}/**`, 8 matches
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read 
+
+Read , lines 1 to 60
+
+Now extend models and test data.   
+
+Replacing 15 lines with 49 lines in , 
+
+ 
+
+Created 
+
+
+```
+
+```
+
+```
+
+```
+
+
+Replacing 3 lines with 5 lines in 
+
+Ran terminal command: cd c:\Users\sharmatl\Projects\InvenTree\submission\automation\api; npm run typecheck 2>&1 | Select-Object -Last 20; cd ..\ui; npm run typecheck 2>&1 | Select-Object -Last 10; cd ..\api
+
+
+```
+
+```
+
+
+Ran terminal command: $env:ENV='LOCALHOST'; npx playwright test tests/parts.validation.spec.ts --reporter=list 2>&1 | Select-Object -Last 60
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run test:api 2>&1 | Select-Object -Last 15
+
+Compacted conversation
+
+No matches found.
+
+No cleanup failures. Now the docs. 
+
+Searched for regex `Run C|Field-level|field-validation|^## |2026-10-30` (`**/{test-cases/api-automation-tests.md,README.md}`), 43 results
+
+Read , lines 140 to 147
+
+Read , lines 28 to 42
+
+Replacing 3 lines with 4 lines in , 
+
+
+```
+
+```
+
+```
+
+```
+
+
+Created 3 todos
+
+I finished the API automation for field-level validation in `parts.validation.spec.ts`. Against the local instance (1.6.3, API 561), 10 tests passed and 18 are marked `fixme` because they wait on open questions. The full API suite also passed: 28 passed, 0 failed, 25 skipped, and no cleanup failures. The API and UI typechecks pass.
+
+**Passed (10):**
+- **API-VAL-005:** a part's name, description, IPN, revision and keywords each accept a value at the schema's maximum length and come back unchanged on a read.
+- **API-VAL-008:** a category's name, description and default keywords do the same.
+- **API-VAL-011:** a 100-character name made of multi-byte characters is stored in full, so the limit counts characters, not bytes.
+- **API-VAL-019:** the write-only part fields don't appear in the create or read responses.
+
+**`fixme` (18), each naming its open question:**
+- **OQ-VAL-01 (what error status a rejected value gets):** 001, 002, 004, 006, 007, 009, 010, 013, 015, 020, 021
+- **OQ-VAL-02 (read-only fields in a request):** 016, 017, 018
+- **OQ-VAL-03 (empty or whitespace-only name):** 003
+- **OQ-VAL-04 (what makes a category icon valid):** the 008 `icon` row
+- **OQ-VAL-05 (whether a field set to null comes back as null or empty):** 012, 014
+
+To support the tests, I added `revision` and `keywords` to `Part`, and `revision` and `copy_category_parameters` to `NewPart`, in `shared/models.ts`. The length and field tables are in `test-data.ts`. I marked Run C done in `api-automation-tests.md` and added the results to `README.md`. No test defects needed fixing, so there's nothing new in the correction log.
+
+Two items from the UI work still need your input:
+
+1. **OQ-ATTR-01:** on the local instance, a part's Active flag is changed with a switch in the Edit Part form. The docs don't say how it's changed. Is this the intended method? If yes, I'll mark OQ-ATTR-01 resolved and update UI-ATTR-012 and UI-ATTR-014.
+2. Part locking turned out to be switched on locally, because UI-ATTR-017 ran instead of skipping itself. The UI run plan assumes it is off for UI-TAB-013 and UI-TAB-018. I'll take that up after you answer the first question.
+
+Made changes.
+
+User: /review-and-correct API-VAL-005
+
+GitHub Copilot: Updated todo list
+
+Searched for regex `API-VAL-005|REQ-VAL-0[1-4]|maxLength` (`**/test-cases/api/field-validation.md`), 29 results
+
+Read , lines 1 to 160
+
+Ran terminal command: cd C:\Users\sharmatl\Projects\InvenTree\inventree-app; Select-String -Path src\backend\InvenTree\part\models.py -Pattern "^\s+(name|description|IPN|revision|keywords) = " -Context 0,8 | Select-Object -First 5 | ForEach-Object { $_.Line; $_.Context.PostContext -match 'max_length|validators|blank|null' }; Select-String -Path src\backend\InvenTree\InvenTree\models.py,src\backend\InvenTree\part\models.py -Pattern "class PartCategory|class InvenTreeTree|class MetadataMixin" | ForEach-Object { "$($_.Filename):$($_.LineNumber) $($_.Line)" }; cd C:\Users\sharmatl\Projects\InvenTree\submission\automation\api
+
+
+
+
+
+Fetched https://docs.inventree.org/en/stable/api/schema/part/
+
+Fetched https://docs.inventree.org/en/stable/part/views/
+
+Searched for regex `async (get|getOrFail|create)\(|throw|ok\(\)|status\(\)` (`**/automation/shared/services/{part,category}.service.ts`), 20 results
+
+Searched for regex `^\s+(async\s+)?get\(` (`**/automation/shared/services/{part,category}.service.ts`), 2 results
+
+Replacing 12 lines with 19 lines in 
+
+
+```
+
+```
+Now the review prompt asks for both projects' typecheck and tests. 
+
+Ran terminal command: npm run typecheck 2>&1 | Select-Object -Last 5; $env:ENV='LOCALHOST'; npx playwright test tests/parts.validation.spec.ts -g "API-VAL-005" --reporter=list 2>&1 | Select-String -Pattern "API-VAL-005|passed|failed|skipped|Error"
+
+Now the full suites for both projects. 
+
+Ran terminal command: $env:ENV='LOCALHOST'; npm run test:api 2>&1 | Select-String -Pattern "^\s+\d+ (passed|failed|skipped|flaky)|✘|failed"; cd ..\ui; npm run typecheck 2>&1 | Select-Object -Last 3; npm run test:ui 2>&1 | Select-String -Pattern "^\s+\d+ (passed|failed|skipped|flaky)|✘"; cd ..\api
+Tool execution failed: Canceled
+
+Made changes.
+
+User: copiloi
+
+GitHub Copilot: Updated todo list

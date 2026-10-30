@@ -30,22 +30,36 @@ The `setup` project (`tests/auth.setup.ts`) logs in once through the login page 
 | Path | Purpose |
 |---|---|
 | `tests/auth.setup.ts` | One-time login; saves storage state |
-| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`), automatic cleanup reported as `cleanup` annotations |
-| `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`) |
-| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs) |
-| `src/components/` | `NavigationComponent` (header tabs), `PartFormComponent` (Add/Edit Part dialog, form error, submit with response) |
-| `../shared/` | Code shared with the API project: token handling, `PartService` and `CategoryService` (setup and cleanup), models, `uniqueName`, cleanup annotations, and the redaction patterns |
+| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `settings`), automatic cleanup reported as `cleanup` annotations |
+| `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`) |
+| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item) |
+| `src/components/` | `NavigationComponent` (header tabs), `ModalFormComponent` (base for API form dialogs: fields by API name, form error, submit with response), `PartFormComponent` (Add/Edit Part, Active switch), `StockItemFormComponent` (Add Stock Item), `DeleteDialogComponent` (delete confirmation) |
+| `../shared/` | Code shared with the API project: token handling, `PartService`, `CategoryService`, `StockItemService`, `SettingsService` (read-only setting checks), models, `uniqueName`, cleanup annotations, and the redaction patterns |
 | `src/models/`, `src/data/` | UI-only types (`PartFormInput`), routes, storage-state path, unique-name factories |
 | `src/global-teardown.ts` | Rewrites every `trace.zip` with the shared `hideSecrets` patterns (session and CSRF cookies, auth and CSRF headers, tokens, the password) before the HTML report copies it |
 
 ## Selectors
 
-Role-based locators are used throughout. InvenTree exposes many controls only through generated aria-labels (for example `login-username`, `text-field-name`, `action-menu-add-parts`, `panel-tabs-part`); these are used where no visible label is associated, and each page object notes why.
+Role-based locators are used throughout. InvenTree exposes many controls only through generated aria-labels (for example `login-username`, `text-field-name`, `number-field-quantity`, `boolean-field-active`, `action-menu-part-actions-edit`, `action-button-add-stock-item`, `panel-tabs-part`); these are used where no visible label is associated, and each page object notes why. The Mantine switch input is visually hidden behind its track, so `PartFormComponent.setActive` sets it with `force`.
 
 ## Known Behaviors
 
 - Tests run with one worker. With two or more, the local Docker instance stops answering some requests (for example `/api/user/me/`) and the front-end falls back to the login page.
 - A "First Use Tour available" toast can cover the form's Submit button. Forms are submitted by keyboard so the tests do not start or dismiss the tour for the shared user.
+- The part Delete action is disabled while a part is active; cleanup deactivates (and unlocks) parts before deleting them, newest first so variants go before their template.
+- Tests never change global settings. UI-ATTR-017 reads `PART_ENABLE_LOCKING` and skips itself when it is off.
+
+## Results (2026-10-30, local 1.6.3, `ENV=LOCALHOST`)
+
+| Case | Result |
+|---|---|
+| setup | Passed |
+| SMOKE-001, SMOKE-002 | Passed |
+| UI-CREATE-001, UI-CREATE-003, UI-CREATE-005, UI-CREATE-013 | Passed |
+| UI-ATTR-008, UI-ATTR-012, UI-ATTR-016, UI-ATTR-017 | Passed |
+| UI-CREATE-009, UI-IMPORT-007, UI-IMPORT-008, UI-ATTR-013 | Skipped (`fixme`, blocked) |
+
+Full suite: 12 passed, 4 skipped, 0 failed; no `cleanup` annotations.
 
 ## Results (2026-10-29, local 1.6.3)
 
