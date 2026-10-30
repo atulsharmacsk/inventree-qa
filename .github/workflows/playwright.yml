@@ -13,25 +13,20 @@ on:
       - '.github/workflows/playwright.yml'
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'ENV for the tests: REMOTE (demo server) or LOCALHOST (needs a self-hosted runner); URLs are mapped in automation/shared/environments.ts'
-        type: choice
-        options: [REMOTE, LOCALHOST]
-        default: REMOTE
       tags:
-        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Empty runs @smoke, or the whole suite when shards is more than 1; "." always runs everything'
+        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Use "." to run everything; empty runs @smoke, or the whole suite when shards is more than 1'
         type: string
-        default: ''
+        default: '@smoke'
       workers:
-        description: 'Parallel workers: a number (4) or percentage (50%). Empty uses the project default (UI 1, API 1 on CI)'
+        description: 'Parallel workers: a number or percentage (50%). Default 2. Going higher overloads the InvenTree demo site: UI tests time out and API calls slow down'
         type: string
-        default: ''
+        default: '2'
       retries:
-        description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
+        description: 'Retries per failed test. Default 2, because the shared demo is slow and intermittently drops requests. Tests that pass only on retry are reported as flaky'
         type: string
-        default: '0'
+        default: '2'
       shards:
-        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; with tags empty, more than 1 covers the whole suite, not just @smoke'
+        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; shards split only the tests that match tags, so use "." in tags to split the whole suite'
         type: string
         default: ''
   # Nightly full regression against the demo server (REMOTE), split over 4 shards; the workflow runs on the default branch only.
@@ -69,11 +64,11 @@ jobs:
 
   test:
     needs: plan
-    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ github.event_name == 'schedule' && 'nightly full regression' || inputs.tags || (needs.plan.outputs.total != '1' && 'full suite') || '@smoke' }})${{ needs.plan.outputs.total != '1' && format(' shard {0}/{1}', matrix.shard, needs.plan.outputs.total) || '' }}
-    # A GitHub-hosted runner cannot reach http://localhost; that environment needs a runner on the Docker host.
-    runs-on: ${{ (inputs.environment || 'REMOTE') == 'LOCALHOST' && 'self-hosted' || 'ubuntu-latest' }}
+    name: ${{ matrix.project }} on REMOTE (${{ github.event_name == 'schedule' && 'nightly full regression' || inputs.tags || (needs.plan.outputs.total != '1' && 'full suite') || '@smoke' }})${{ needs.plan.outputs.total != '1' && format(' shard {0}/{1}', matrix.shard, needs.plan.outputs.total) || '' }}
+    # CI targets the public demo server only: a GitHub-hosted runner cannot reach http://localhost.
+    runs-on: ubuntu-latest
     timeout-minutes: ${{ github.event_name == 'schedule' && 120 || 30 }}
-    environment: ${{ inputs.environment || 'REMOTE' }}
+    environment: REMOTE
     strategy:
       fail-fast: false
       matrix:
@@ -81,20 +76,20 @@ jobs:
         shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     defaults:
       run:
-        # Explicit bash so the same scripts run on a Windows self-hosted runner (Git Bash).
         shell: bash
         working-directory: automation/${{ matrix.project }}
     env:
       # Inputs reach scripts through env, not ${{ }} interpolation, to avoid script injection.
-      ENV: ${{ inputs.environment || 'REMOTE' }}
+      ENV: REMOTE
       GREP: ${{ inputs.tags || '@smoke' }}
       TAGS_INPUT: ${{ inputs.tags }}
       # A scheduled run has no inputs: it runs every test instead of the @smoke subset.
       FULL_RUN: ${{ github.event_name == 'schedule' }}
       SHARD: ${{ matrix.shard }}
       SHARD_TOTAL: ${{ needs.plan.outputs.total }}
-      WORKERS: ${{ inputs.workers }}
-      RETRIES: ${{ inputs.retries || '0' }}
+      # 2 workers per job: more parallel browsers and API calls make the InvenTree demo slow, which causes timeouts.
+      WORKERS: ${{ inputs.workers || '2' }}
+      RETRIES: ${{ inputs.retries || '2' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
       SUPERUSER_USERNAME: ${{ secrets.SUPERUSER_USERNAME }}
       SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
