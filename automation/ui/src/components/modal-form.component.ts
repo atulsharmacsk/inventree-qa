@@ -30,6 +30,28 @@ export class ModalFormComponent {
     return this.dialog.getByRole('switch', { name: `boolean-field-${field}` });
   }
 
+  relatedField(field: string): Locator {
+    return this.dialog.getByRole('combobox', { name: `related-field-${field}` });
+  }
+
+  treeField(field: string): Locator {
+    return this.dialog.getByRole('textbox', { name: `tree-field-${field}` });
+  }
+
+  /** Opens a tree field (category, location), filters it by name, and picks the matching option. */
+  async selectTreeOption(field: string, name: string): Promise<void> {
+    await this.treeField(field).click();
+    await this.treeField(field).fill(name);
+    await this.page.getByRole('listbox').getByRole('option').filter({ hasText: name }).first().click();
+  }
+
+  /** Searches a related-record field and picks the option containing `text`. */
+  async selectRelated(field: string, text: string): Promise<void> {
+    await this.relatedField(field).fill(text);
+    // The options menu is rendered in a portal on the page body, outside the dialog.
+    await this.page.getByRole('option').filter({ hasText: text }).first().click();
+  }
+
   async waitUntilReady(): Promise<void> {
     await this.submitButton.waitFor();
   }

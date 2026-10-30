@@ -31,7 +31,7 @@ The `setup` project (`tests/auth.setup.ts`) logs in once through the login page 
 |---|---|
 | `tests/auth.setup.ts` | One-time login; saves storage state |
 | `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `settings`), automatic cleanup reported as `cleanup` annotations |
-| `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`) |
+| `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`, `part.tabs.spec.ts`, `part.flow.spec.ts`) |
 | `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item) |
 | `src/components/` | `NavigationComponent` (header tabs), `ModalFormComponent` (base for API form dialogs: fields by API name, form error, submit with response), `PartFormComponent` (Add/Edit Part, Active switch), `StockItemFormComponent` (Add Stock Item), `DeleteDialogComponent` (delete confirmation) |
 | `../shared/` | Code shared with the API project: token handling, `PartService`, `CategoryService`, `StockItemService`, `SettingsService` (read-only setting checks), models, `uniqueName`, cleanup annotations, and the redaction patterns |
@@ -57,9 +57,13 @@ Role-based locators are used throughout. InvenTree exposes many controls only th
 | SMOKE-001, SMOKE-002 | Passed |
 | UI-CREATE-001, UI-CREATE-003, UI-CREATE-005, UI-CREATE-013 | Passed |
 | UI-ATTR-008, UI-ATTR-012, UI-ATTR-016, UI-ATTR-017 | Passed |
+| UI-TAB-005, UI-TAB-006, UI-TAB-009, UI-TAB-011, UI-TAB-015, UI-TAB-019 (`part.tabs.spec.ts`) | Passed (per the Run D plan entry; not re-run in this update) |
+| UI-TAB-013, UI-TAB-018 | Skipped (`fixme`, blocked by OQ-TAB-07) |
 | UI-CREATE-009, UI-IMPORT-007, UI-IMPORT-008, UI-ATTR-013 | Skipped (`fixme`, blocked) |
 
 Full suite: 12 passed, 4 skipped, 0 failed; no `cleanup` annotations.
+
+Run E (`tests/part.flow.spec.ts`, 2026-10-30): UI-CREATE-015 passed in about 56 s, so the spec sets a 120 s timeout (the default 30 s ended the first run mid-flow while a page was still loading). Setup and the spec: 3 passed, 0 failed.
 
 ## Results (2026-10-29, local 1.6.3)
 

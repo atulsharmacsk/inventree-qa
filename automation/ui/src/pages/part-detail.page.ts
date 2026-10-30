@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
+import { BomItemFormComponent } from '../components/bom-item-form.component';
 import { DeleteDialogComponent } from '../components/delete-dialog.component';
+import { ParameterFormComponent } from '../components/parameter-form.component';
 import { PartFormComponent } from '../components/part-form.component';
 import { StockItemFormComponent } from '../components/stock-item-form.component';
 import { ROUTES } from '../models/paths';
@@ -74,6 +76,48 @@ export class PartDetailPage {
     const form = new StockItemFormComponent(this.page);
     await form.waitUntilReady();
     return form;
+  }
+
+  /** BOM tab > Edit BOM > Add BOM Items > Add BOM Item. */
+  async openAddBomItemForm(): Promise<BomItemFormComponent> {
+    await this.openTab('Bill of Materials');
+    const panel = this.tabPanel('Bill of Materials');
+    // Icon-only toolbar controls expose only their generated aria-labels.
+    await panel.getByRole('button', { name: 'action-button-edit-bom' }).click();
+    await panel.getByRole('button', { name: 'action-menu-add-bom-items' }).click();
+    await this.page.getByRole('menuitem', { name: 'action-menu-add-bom-items-add-bom-item' }).click();
+    const form = new BomItemFormComponent(this.page);
+    await form.waitUntilReady();
+    return form;
+  }
+
+  /** Parameters tab > Add Parameters > Create Parameter. */
+  async openAddParameterForm(): Promise<ParameterFormComponent> {
+    await this.openTab('Parameters');
+    await this.tabPanel('Parameters').getByRole('button', { name: 'action-menu-add-parameters' }).click();
+    await this.page.getByRole('menuitem', { name: 'action-menu-add-parameters-create-parameter' }).click();
+    const form = new ParameterFormComponent(this.page);
+    await form.waitUntilReady();
+    return form;
+  }
+
+  /** Variants tab > Add Parts > Create Part; the form is pre-filled as a variant of this part. */
+  async openCreateVariantForm(): Promise<PartFormComponent> {
+    await this.openTab('Variants');
+    await this.tabPanel('Variants').getByRole('button', { name: 'action-menu-add-parts' }).click();
+    await this.page.getByRole('menuitem', { name: 'action-menu-add-parts-create-part' }).click();
+    const form = new PartFormComponent(this.page, 'Add Part');
+    await form.waitUntilReady();
+    return form;
+  }
+
+  tabPanel(name: PartTab): Locator {
+    return this.page.getByRole('tabpanel', { name });
+  }
+
+  /** Table rows in a tab panel that contain `text`, for example a location or part name. */
+  tableRows(tab: PartTab, text: string): Locator {
+    return this.tabPanel(tab).getByRole('row').filter({ hasText: text });
   }
 
   /** The page title paragraph, for example "Part: Widget". */

@@ -109,6 +109,7 @@ export type StockItem = {
   part: number;
   quantity: number;
   serial: string | null;
+  location: number | null;
 };
 
 /** Fields sent when creating stock. `serial_numbers` needs a trackable part. */
@@ -116,13 +117,65 @@ export type NewStockItem = {
   part: number;
   quantity: number;
   serial_numbers?: string;
+  location?: number;
 };
 
 /** Query filters for `GET /api/stock/` used by the tests. */
 export type StockItemFilters = {
   part?: number;
   serial?: string;
+  location?: number;
 };
+
+/** A stock location as returned by `/api/stock/location/`. */
+export type StockLocation = {
+  pk: number;
+  name: string;
+};
+
+export type NewStockLocation = {
+  name: string;
+};
+
+/** A BOM line as returned by `GET /api/bom/`. */
+export type BomItem = {
+  pk: number;
+  part: number;
+  sub_part: number;
+  quantity: number;
+};
+
+/** A parameter template as returned by `/api/parameter/template/`. */
+export type ParameterTemplate = {
+  pk: number;
+  name: string;
+  units: string;
+};
+
+/** Fields sent when creating a parameter template; `model_type` limits it to one model, for example `part.part`. */
+export type NewParameterTemplate = {
+  name: string;
+  units?: string;
+  model_type?: string;
+};
+
+/** A parameter value as returned by `GET /api/parameter/`. */
+export type Parameter = {
+  pk: number;
+  template: number;
+  model_type: string;
+  model_id: number;
+  data: string;
+};
+
+/** Query filters for `GET /api/parameter/` used by the tests. */
+export type ParameterFilters = {
+  model_type: string;
+  model_id: number;
+};
+
+/** The `model_type` value for parts in the generic parameter API. */
+export const PART_MODEL_TYPE = 'part.part';
 
 /** A global setting as returned by `GET /api/settings/global/{key}/`. */
 export type GlobalSetting = {
