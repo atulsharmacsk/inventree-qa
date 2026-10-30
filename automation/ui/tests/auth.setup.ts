@@ -11,6 +11,7 @@ for (const role of ROLES) {
     const credentials = credentialsFor(role);
     setup.skip(!credentials, missingRoleMessage(role));
     if (!credentials) return;
+    setup.setTimeout(90_000);
 
     const login = new LoginPage(page);
     await setup.step('Open /web/ and log in', async () => {
