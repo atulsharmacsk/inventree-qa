@@ -1,4 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { deleteWithRetry } from '../cleanup';
 import { DEFAULT_PAGE_LIMIT, type NewPart, type Part } from '../models';
 
 /** Sends requests to /api/part/ and remembers the parts a test creates or adopts. */
@@ -73,7 +74,7 @@ export class PartService {
     for (const id of this.createdIds) {
       // Local 1.6.3 rejects deleting an active part with 400 (OQ-PART-02), so deactivate first.
       await this.update(id, { active: false });
-      const response = await this.delete(id);
+      const response = await deleteWithRetry(() => this.delete(id));
       if (response.status() !== 204 && response.status() !== 404) {
         failures.push(`Deleting part ${id} returned ${response.status()}`);
       }

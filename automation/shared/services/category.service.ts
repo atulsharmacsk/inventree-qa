@@ -1,4 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { deleteWithRetry } from '../cleanup';
 import { DEFAULT_PAGE_LIMIT, type Category, type CategoryFilters, type NewCategory, type Page } from '../models';
 
 /** Body flags the local server requires on category delete (OQ-ACAT-03); not in the published schema. */
@@ -81,7 +82,7 @@ export class CategoryService {
     const failures: string[] = [];
     for (const id of [...this.createdIds].reverse()) {
       // False keeps the delete from cascading to records the test did not create.
-      const response = await this.delete(id);
+      const response = await deleteWithRetry(() => this.delete(id));
       if (response.status() !== 204 && response.status() !== 404) {
         failures.push(`Deleting category ${id} returned ${response.status()}`);
       }
