@@ -84,5 +84,7 @@ The documentation is the source of truth for expected results. Behavior seen on 
 - Keep secrets out of source files, test output, generated artifacts, prompts, screenshots, and recordings.
 - Prioritize by risk: P1 = data integrity or core workflow failure, P2 = important with a workaround, P3 = low impact.
 - Give every manual case a unique ID and source reference, and put that ID in the title of any test that automates it.
-- Run the narrowest relevant test and the project's type check after code changes. Report actual results and unresolved gaps.
+- Run the narrowest relevant test, the project's type check, and `npm run lint:specs` after code changes. Report actual results and unresolved gaps.
 - Record every correction made to agent-generated output in the `README.md` correction log, with the reason.
+
+<!-- Customization set v1.3 (2026-10-30). History: CHANGELOG.md -->

@@ -18,7 +18,7 @@ The UI automation project is `automation/ui/` (Playwright Test, TypeScript, Chro
    - Key UI elements, navigation, and form behavior, including required-field validation
    - At least one cross-functional flow: create a part, add parameters, create stock, and verify the part in its category view
 4. Build page objects under `src/pages/`, shared widgets under `src/components/`, and fixtures that provide them. Specs use only fixtures, page objects, factories, assertions, and `test.step`. API-based setup and cleanup go through service classes in `automation/shared/services/`. Keep the `src/global-teardown.ts` redaction in place before enabling traces, screenshots, or video.
-5. Inspect the running application to choose selectors. Run `npm run typecheck` and `npm run test:ui` in `automation/ui/`, then fix test defects. Update the run's status in [ui-automation-tests.md](../../test-cases/ui-automation-tests.md).
+5. Inspect the running application to choose selectors. Run `npm run typecheck`, `npm run lint:specs`, and `npm run test:ui` in `automation/ui/`, then fix test defects. Update the run's status in [ui-automation-tests.md](../../test-cases/ui-automation-tests.md).
 
 ## Constraints
 Follow the Playwright test instructions. Use test IDs or CSS only when no accessible locator is stable, and note why. Keep the storage-state file out of version control.
@@ -29,3 +29,5 @@ Follow the Playwright test instructions. Use test IDs or CSS only when no access
 
 ## Output
 Spec files under `automation/ui/tests/`, the auth setup and config changes, an updated `automation/ui/README.md`, and a summary of executed results mapped to case IDs.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

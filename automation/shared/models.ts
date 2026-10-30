@@ -14,15 +14,15 @@ export type PartFlag =
 
 export const PART_FLAGS: PartFlag[] = [
   'active',
-  // 'assembly',
-  // 'component',
-  // 'consumable',
-  // 'is_template',
-  // 'purchaseable',
-  // 'salable',
-  // 'testable',
-  // 'trackable',
-  // 'virtual',
+  'assembly',
+  'component',
+  'consumable',
+  'is_template',
+  'purchaseable',
+  'salable',
+  'testable',
+  'trackable',
+  'virtual',
 ];
 
 /** Page size sent as the required `limit` parameter on list endpoints. */

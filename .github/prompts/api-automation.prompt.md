@@ -17,7 +17,7 @@ The API automation project is `automation/api/` (Playwright Test, TypeScript). I
 4. Use data-driven tests for validation, boundary lengths, and filter combinations.
 5. Add or extend the service, model, data factory, and check modules (in `automation/shared/` when the UI project also needs them, otherwise in `automation/api/src/`) so specs contain only fixtures, `test.step` blocks, and assertions.
 6. Before automating a case, check the root `README.md` Open Review Findings for known local behavior that contradicts its expected result; if one exists, use `test.fixme` with the open question instead of guessing.
-7. Run `npm run typecheck` and `npm run test:api` in `automation/api/`. Fix failures caused by the tests; report failures caused by the application as findings. Update the run's status in [api-automation-tests.md](../../test-cases/api-automation-tests.md).
+7. Run `npm run typecheck`, `npm run lint:specs`, and `npm run test:api` in `automation/api/`. Fix failures caused by the tests; report failures caused by the application as findings. Update the run's status in [api-automation-tests.md](../../test-cases/api-automation-tests.md).
 
 ## Constraints
 Follow the Playwright test instructions. Add a new dependency only if necessary, and explain why. Note any difference between the running instance and the documentation.
@@ -28,3 +28,5 @@ Follow the Playwright test instructions. Add a new dependency only if necessary,
 
 ## Output
 Spec files under `automation/api/tests/`, the service-layer modules under `automation/api/src/`, an updated `automation/api/README.md` if run instructions change, and a summary of executed results (passed, failed, skipped) mapped to case IDs.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

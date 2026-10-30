@@ -27,3 +27,5 @@ Use only behavior supported by the schema or supplied documentation. Do not inve
 
 ## Output
 Write the area's file under `test-cases/api/` and update the index [api-manual-tests.md](../../test-cases/api-manual-tests.md), following the layout, area file structure, and case format in the manual test case instructions. List the area's endpoints at the top of the file and mark automation candidates. Do not change other area files.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

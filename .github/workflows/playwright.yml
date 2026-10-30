@@ -19,7 +19,7 @@ on:
         options: [REMOTE, LOCALHOST]
         default: REMOTE
       tags:
-        description: 'Playwright --grep filter, for example @smoke, or "@smoke|API-CAT"'
+        description: 'Playwright --grep filter, for example @smoke, "@smoke|API-CAT", or "." for the whole suite'
         type: string
         default: '@smoke'
       workers:
@@ -30,20 +30,27 @@ on:
         description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
         type: string
         default: '0'
+      shard:
+        description: 'Playwright --shard, for example 1/4. Start one run per shard to split a large suite; empty runs everything'
+        type: string
+        default: ''
+  # Nightly full regression against the demo server (REMOTE); the workflow runs on the default branch only.
+  schedule:
+    - cron: '0 2 * * *'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
-    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ inputs.tags || '@smoke' }})
+    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ github.event_name == 'schedule' && 'nightly full regression' || inputs.tags || '@smoke' }})
     # A GitHub-hosted runner cannot reach http://localhost; that environment needs a runner on the Docker host.
     runs-on: ${{ (inputs.environment || 'REMOTE') == 'LOCALHOST' && 'self-hosted' || 'ubuntu-latest' }}
-    timeout-minutes: 30
+    timeout-minutes: ${{ github.event_name == 'schedule' && 120 || 30 }}
     environment: ${{ inputs.environment || 'REMOTE' }}
     strategy:
       fail-fast: false
@@ -58,6 +65,9 @@ jobs:
       # Inputs reach scripts through env, not ${{ }} interpolation, to avoid script injection.
       ENV: ${{ inputs.environment || 'REMOTE' }}
       GREP: ${{ inputs.tags || '@smoke' }}
+      # A scheduled run has no inputs: it runs every test instead of the @smoke subset.
+      FULL_RUN: ${{ github.event_name == 'schedule' }}
+      SHARD: ${{ inputs.shard }}
       WORKERS: ${{ inputs.workers }}
       RETRIES: ${{ inputs.retries || '0' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
@@ -92,6 +102,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check spec layering
+        run: npm run lint:specs
+
       - name: Cache Playwright browsers
         if: matrix.project == 'ui' && runner.os == 'Linux'
         id: cache-playwright-browsers
@@ -110,8 +123,12 @@ jobs:
         run: npx playwright install --only-shell chromium
         timeout-minutes: 10
 
-      - name: Run tests matching ${{ env.GREP }}
-        run: npx playwright test --grep "$GREP" --pass-with-no-tests
+      - name: Run tests (${{ github.event_name == 'schedule' && 'full regression' || env.GREP }})
+        run: |
+          args=()
+          if [ "$FULL_RUN" != "true" ]; then args+=(--grep "$GREP"); fi
+          if [ -n "$SHARD" ]; then args+=(--shard "$SHARD"); fi
+          npx playwright test "${args[@]}" --pass-with-no-tests
 
       # Traces in these folders are already scrubbed by src/global-teardown.ts.
       - name: Upload Playwright report

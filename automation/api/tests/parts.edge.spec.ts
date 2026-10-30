@@ -26,13 +26,9 @@ test.describe('Edge cases', () => {
   test.describe('Conflict scenarios', () => {
     test.fixme('API-EDGE-011: delete a locked part while locking is enabled (blocked by OQ-EDGE-04)', async () => {});
 
-    test('API-EDGE-012: delete a locked part while locking is disabled', async ({ parts, settings }) => {
-      await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/ is disabled', async () => {
-        const lockingEnabled = await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
-        // Tests never change global settings, so this case needs an instance where locking is already off.
-        test.skip(lockingEnabled, 'API-EDGE-012 needs part locking (PART_ENABLE_LOCKING) disabled on this instance');
-      });
-
+    // Skipped, not deleted: the body is ready to run once an instance has part locking (PART_ENABLE_LOCKING) disabled.
+    // Tests never change global settings, and locking is enabled on the local instance.
+    test.fixme('API-EDGE-012: delete a locked part while locking is disabled (blocked: PART_ENABLE_LOCKING is enabled on the local instance)', async ({ parts }) => {
       const part = await test.step('Setup: POST /api/part/ with locked=true and active=false', async () => {
         return await parts.createOrFail(newPart({ locked: true, active: false }));
       });

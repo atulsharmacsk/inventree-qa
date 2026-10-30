@@ -7,6 +7,7 @@
     "test": "playwright test",
     "test:ui": "playwright test --project=ui",
     "typecheck": "tsc --noEmit",
+    "lint:specs": "node ../shared/check-spec-layering.mjs tests",
     "report": "playwright show-report",
     "allure:generate": "allure generate allure-results --output allure-report --clean",
     "allure:open": "allure open allure-report --host 127.0.0.1",
