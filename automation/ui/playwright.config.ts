@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { baseUrl } from '../shared/environments';
+import { retriesFromEnv, workersFromEnv } from '../shared/run-options';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
@@ -11,10 +12,14 @@ export default defineConfig({
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 0,
-  // The local Docker instance drops requests (for example /api/user/me/) with parallel browsers, which logs the page out.
-  workers: 1,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  retries: retriesFromEnv(),
+  // Default 1: the local Docker instance drops requests (for example /api/user/me/) with parallel browsers, which logs the page out.
+  workers: workersFromEnv(1),
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    ['allure-playwright', { resultsDir: path.resolve(__dirname, 'allure-results') }],
+  ],
   use: {
     baseURL: baseUrl(),
     trace: 'retain-on-failure',

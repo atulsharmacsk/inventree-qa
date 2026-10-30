@@ -11,6 +11,8 @@ node_modules/
 /ui/test-results/
 /ui/playwright-report/
 /ui/playwright/.auth/
+allure-results/
+allure-report/
 
 # Local environment variables and credentials
 .env

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { ROUTES } from '../models/paths';
 
 export type MainSection = 'Dashboard' | 'Parts' | 'Stock' | 'Manufacturing' | 'Purchasing' | 'Sales';
 
@@ -7,8 +8,12 @@ export class NavigationComponent {
   readonly mainTabs: Locator;
 
   // The header tablist has no accessible name; it is the only one with a Dashboard tab.
-  constructor(page: Page) {
+  constructor(private readonly page: Page) {
     this.mainTabs = page.getByRole('tablist').filter({ has: page.getByRole('tab', { name: 'Dashboard', exact: true }) });
+  }
+
+  async goHome(): Promise<void> {
+    await this.page.goto(ROUTES.home);
   }
 
   section(name: MainSection): Locator {

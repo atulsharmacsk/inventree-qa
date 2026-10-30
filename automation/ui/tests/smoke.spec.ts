@@ -5,9 +5,9 @@ import { expect, test } from './fixtures';
 test.describe('Smoke', { tag: '@smoke' }, () => {
   test.use({ role: 'SUPERUSER' });
 
-  test('SMOKE-001: logged-in user opens the Parts view from the main navigation', async ({ page, navigation, partsList }) => {
+  test('SMOKE-001: logged-in user opens the Parts view from the main navigation', async ({ navigation, partsList }) => {
     await test.step('Open /web/ with the saved session', async () => {
-      await page.goto('/web/');
+      await navigation.goHome();
     });
 
     await test.step('Click the Parts tab, then the Parts panel', async () => {
