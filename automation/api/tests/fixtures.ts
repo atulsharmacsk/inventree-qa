@@ -4,7 +4,6 @@ import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
 import { PartService } from '../../shared/services/part.service';
-import { SettingsService } from '../../shared/services/settings.service';
 import { StockItemService } from '../../shared/services/stock-item.service';
 import { StockLocationService } from '../../shared/services/stock-location.service';
 import { CompanyService } from '../src/services/company.service';
@@ -26,7 +25,6 @@ type Fixtures = {
   companies: CompanyService;
   supplierParts: SupplierPartService;
   manufacturerParts: ManufacturerPartService;
-  settings: SettingsService;
   system: SystemService;
 };
 
@@ -110,10 +108,6 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const supplierParts = new SupplierPartService(authenticatedRequest);
     await use(supplierParts);
     reportCleanup(testInfo, await supplierParts.deleteCreated());
-  },
-
-  settings: async ({ authenticatedRequest }, use) => {
-    await use(new SettingsService(authenticatedRequest));
   },
 
   system: async ({ authenticatedRequest }, use) => {

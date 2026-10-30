@@ -40,3 +40,5 @@ applyTo: "test-cases/**"
 - Before writing expected results, read the root `README.md` (Agent Output Corrections and Open Review Findings) and the open questions in other area files. If a recorded local observation contradicts the documentation, reference or extend that open question instead of asserting either behavior, and do not mark the case as a ready automation candidate.
 - State server settings that affect behavior (for example, duplicate IPN handling) as preconditions.
 - Do not include credentials or tokens.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

@@ -27,3 +27,5 @@ Use only behavior stated in the documentation. Do not invent fields, messages, o
 
 ## Output
 Write the area's file under `test-cases/ui/` and update the index [ui-manual-tests.md](../../test-cases/ui-manual-tests.md), following the layout, area file structure, and case format in the manual test case instructions. Do not change other area files. Finish with a short summary: cases by priority, open questions, and which required negative scenarios are now covered.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

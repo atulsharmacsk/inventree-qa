@@ -19,7 +19,7 @@ Specs describe behavior only. Every HTTP call or page interaction goes through a
 
 This table describes the current layout. Check the files before adding a layer, and update this table when the layout changes.
 
-- Never call `request.get/post/...`, `page.goto`, `page.locator`, or `page.getBy*` in a spec. Add or extend a service, page object, or component instead.
+- Never call `request.get/post/...`, `page.goto`, `page.locator`, or `page.getBy*` in a spec. Add or extend a service, page object, or component instead. `npm run lint:specs` (rules in `automation/shared/check-spec-layering.mjs`) enforces this, and also rejects raw request fixtures, `waitForTimeout`, and `.only`; CI runs it before the tests.
 - Services return the raw `APIResponse` for the action under test, so specs can assert status codes. `*OrFail` helpers are only for arrange steps; they throw with the status and body if the call fails.
 - Page objects expose readonly locators and intent-level methods (for example `createPart(data)`). Keep `expect` out of page objects and services, except for readiness waits.
 - Services track the records they create; fixtures delete them in teardown and report failed deletes as `cleanup` annotations. Order fixture dependencies so dependents are deleted first.
@@ -57,4 +57,6 @@ This table describes the current layout. Check the files before adding a layer, 
 
 ## Verification
 
-- Run `npm run typecheck` and the narrowest relevant spec after each change, then report pass, fail, and skip counts by case ID.
+- Run `npm run typecheck`, `npm run lint:specs`, and the narrowest relevant spec after each change, then report pass, fail, and skip counts by case ID.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->

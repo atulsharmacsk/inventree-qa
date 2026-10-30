@@ -12,7 +12,7 @@ The test cases in `test-cases/` and the automation in `automation/` were generat
 
 ## Instruction
 1. Check the manual cases against the source documentation and schema. Flag unsupported expectations, missing required coverage areas, and duplicates.
-2. Run both automation projects (typecheck and tests) and classify each failure as a test defect, environment issue, or application finding.
+2. Run both automation projects (typecheck, `npm run lint:specs`, and tests) and classify each failure as a test defect, environment issue, or application finding.
 3. Fix test defects with the smallest change.
 4. Record every correction made to agent output.
 
@@ -24,3 +24,5 @@ Do not weaken assertions to make tests pass. Do not delete failing tests without
 
 ## Output
 Applied fixes, plus an "Agent Output Corrections" section in [README.md](../../README.md) with a table: artifact, issue, change made, and reason. Include the final test results.
+
+<!-- Customization set v1.3 (2026-10-30). History: ../CHANGELOG.md -->
