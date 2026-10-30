@@ -1,11 +1,15 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { FullConfig } from '@playwright/test';
 import JSZip from 'jszip';
-import { findTraceFiles, hideSecrets } from '../../shared/redaction';
+import { findTraceFiles, hideSecrets, redactTextFiles } from '../../shared/redaction';
 
 // Runs once after all tests, before any reporter copies traces into a report.
 export default async function globalTeardown(config: FullConfig): Promise<void> {
-  for (const tracePath of await findTraceFiles(config.projects.map((project) => project.outputDir))) {
+  const allureResults = path.resolve(__dirname, '..', 'allure-results');
+  const folders = [...config.projects.map((project) => project.outputDir), allureResults];
+  await redactTextFiles(folders);
+  for (const tracePath of await findTraceFiles(folders)) {
     const zip = await JSZip.loadAsync(await fs.readFile(tracePath));
     for (const file of Object.values(zip.files)) {
       if (file.dir) continue;
