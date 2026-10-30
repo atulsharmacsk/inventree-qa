@@ -6,6 +6,8 @@ const STOCK_LIST_ENDPOINT = /\/api\/stock\/$/;
 export type StockItemFormInput = {
   quantity: number;
   serialNumbers?: string;
+  /** Name of the stock location to pick. */
+  location?: string;
 };
 
 /** The Add Stock Item dialog opened from a part's Stock tab. */
@@ -17,6 +19,7 @@ export class StockItemFormComponent extends ModalFormComponent {
   async fill(input: StockItemFormInput): Promise<void> {
     await this.numberField('quantity').fill(String(input.quantity));
     if (input.serialNumbers !== undefined) await this.textField('serial_numbers').fill(input.serialNumbers);
+    if (input.location !== undefined) await this.selectTreeOption('location', input.location);
   }
 
   /** Submits and returns the server response to `POST /api/stock/`. */

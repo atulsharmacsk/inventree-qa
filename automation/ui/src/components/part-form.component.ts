@@ -16,7 +16,7 @@ export class PartFormComponent extends ModalFormComponent {
   }
 
   get categoryField(): Locator {
-    return this.dialog.getByRole('textbox', { name: 'tree-field-category' });
+    return this.treeField('category');
   }
 
   get activeSwitch(): Locator {
@@ -29,11 +29,8 @@ export class PartFormComponent extends ModalFormComponent {
     }
   }
 
-  /** Opens the category tree field, filters it by name, and picks the matching option. */
   async selectCategory(name: string): Promise<void> {
-    await this.categoryField.click();
-    await this.categoryField.fill(name);
-    await this.page.getByRole('listbox').getByRole('option').filter({ hasText: name }).first().click();
+    await this.selectTreeOption('category', name);
   }
 
   /** Sets the Active switch; the edit form loads the part's values first, so this waits for the switch. */

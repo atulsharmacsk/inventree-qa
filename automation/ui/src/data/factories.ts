@@ -1,4 +1,11 @@
-import type { NewCategory, NewPart, NewStockItem } from '../../../shared/models';
+import {
+  PART_MODEL_TYPE,
+  type NewCategory,
+  type NewParameterTemplate,
+  type NewPart,
+  type NewStockItem,
+  type NewStockLocation,
+} from '../../../shared/models';
 import { uniqueName } from '../../../shared/data';
 import type { PartFormInput } from '../models/part';
 
@@ -14,6 +21,15 @@ export function newStockItem(part: number, overrides: Partial<NewStockItem> = {}
 
 export function newCategory(overrides: Partial<NewCategory> = {}): NewCategory {
   return { name: uniqueName('pw-ui-category'), ...overrides };
+}
+
+export function newStockLocation(overrides: Partial<NewStockLocation> = {}): NewStockLocation {
+  return { name: uniqueName('pw-ui-location'), ...overrides };
+}
+
+/** A part parameter template without units. */
+export function newParameterTemplate(overrides: Partial<NewParameterTemplate> = {}): NewParameterTemplate {
+  return { name: uniqueName('pw-ui-param'), model_type: PART_MODEL_TYPE, ...overrides };
 }
 
 export function partFormInput(overrides: PartFormInput = {}): PartFormInput {

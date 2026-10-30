@@ -2,10 +2,13 @@ import { test as base, expect, type APIRequestContext } from '@playwright/test';
 import { withApiTokens, type TokenForRole } from '../../shared/auth';
 import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
+import { BomItemService } from '../../shared/services/bom-item.service';
 import { CategoryService } from '../../shared/services/category.service';
+import { ParameterService } from '../../shared/services/parameter.service';
 import { PartService } from '../../shared/services/part.service';
 import { SettingsService } from '../../shared/services/settings.service';
 import { StockItemService } from '../../shared/services/stock-item.service';
+import { StockLocationService } from '../../shared/services/stock-location.service';
 import { NavigationComponent } from '../src/components/navigation.component';
 import { storageStatePath } from '../src/models/paths';
 import { PartDetailPage } from '../src/pages/part-detail.page';
@@ -19,6 +22,9 @@ type Fixtures = {
   parts: PartService;
   categories: CategoryService;
   stockItems: StockItemService;
+  stockLocations: StockLocationService;
+  bomItems: BomItemService;
+  parameters: ParameterService;
   settings: SettingsService;
   navigation: NavigationComponent;
   partsList: PartsListPage;
@@ -70,12 +76,29 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     reportCleanup(testInfo, await parts.deleteCreated());
   },
 
-  // Depends on `parts` so stock is deleted before the parts it belongs to.
-  stockItems: async ({ apiRequest, parts }, use, testInfo) => {
+  // Depends on `parts` and `stockLocations` so stock is deleted before the parts and locations it belongs to.
+  stockItems: async ({ apiRequest, parts, stockLocations }, use, testInfo) => {
     void parts;
+    void stockLocations;
     const stockItems = new StockItemService(apiRequest);
     await use(stockItems);
     reportCleanup(testInfo, await stockItems.deleteCreated());
+  },
+
+  stockLocations: async ({ apiRequest }, use, testInfo) => {
+    const stockLocations = new StockLocationService(apiRequest);
+    await use(stockLocations);
+    reportCleanup(testInfo, await stockLocations.deleteCreated());
+  },
+
+  bomItems: async ({ apiRequest }, use) => {
+    await use(new BomItemService(apiRequest));
+  },
+
+  parameters: async ({ apiRequest }, use, testInfo) => {
+    const parameters = new ParameterService(apiRequest);
+    await use(parameters);
+    reportCleanup(testInfo, await parameters.deleteCreated());
   },
 
   settings: async ({ apiRequest }, use) => {
