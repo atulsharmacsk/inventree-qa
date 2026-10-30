@@ -169,17 +169,17 @@ Covers creating, retrieving, updating, and deleting parts through the Part API. 
 
 ## Delete
 
-### API-PART-011: Delete a part
+### API-PART-011: An active part must be made inactive before it is deleted
 - **Priority:** P1
 - **Type:** Positive
-- **Automation candidate:** Yes, after OQ-PART-02
-- **Preconditions:** A test-owned part with no stock.
-- **Request:** `DELETE /api/part/{id}/`, then `GET /api/part/{id}/`.
-- **Expected status:** 204 for the delete. See OQ-PART-01 for the follow-up retrieve.
-- **Expected business result:** The part no longer exists.
+- **Automation candidate:** Yes
+- **Preconditions:** A test-owned active part with no stock.
+- **Request:** `DELETE /api/part/{id}/`; then `PATCH /api/part/{id}/` with `active=false`; then `DELETE /api/part/{id}/` again; then list parts by the part's name.
+- **Expected status:** 400 for the first delete, 200 for the `PATCH`, 204 for the second delete. The status of a later `GET` of the deleted part is not asserted (OQ-PART-01).
+- **Expected business result:** The first delete changes nothing and the part is still active. After the second delete the part no longer exists.
 - **Requirements:** REQ-APART-07
-- **Sources:** schema `DELETE /api/part/{id}/`
-- **Open question:** OQ-PART-02.
+- **Sources:** schema `DELETE /api/part/{id}/`; `docs:part/#active-parts`; Local 1.6.3, confirmed by user (2026-10-30)
+- **Open question:** OQ-PART-02 (resolved).
 
 ### API-PART-012: Operations on a part that does not exist
 - **Priority:** P2
@@ -208,8 +208,8 @@ All 11 requirements are covered by at least one case.
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-PART-01 | Which status is returned for a part ID that does not exist? The schema documents only success responses. | API-PART-011, API-PART-012 | Open |
-| OQ-PART-02 | Can an active part be deleted, or must it be made inactive first? The schema documents only 204; `docs:part/#active-parts` recommends marking obsolete parts inactive but states no restriction. | API-PART-011 | Open |
+| OQ-PART-01 | Which status is returned for a part ID that does not exist? The schema documents only success responses. | API-PART-011, API-PART-012 | Partly resolved: `GET` of a part ID that does not exist returns 404 `No Part matches the given query.` (local 1.6.3, confirmed by user, 2026-10-30). `PATCH` and `DELETE` on a missing part are not yet observed; API-PART-012 is not an automation candidate. |
+| OQ-PART-02 | Can an active part be deleted, or must it be made inactive first? The schema documents only 204; `docs:part/#active-parts` recommends marking obsolete parts inactive but states no restriction. | API-PART-011 | Resolved: intended behaviour. Deleting an active part returns 400 "Cannot delete this part as it is still active"; after `active=false` it returns 204. Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-PART-03 | Is `initial_stock` applied through the API when the *Initial Stock Data* setting is off? The documentation describes the setting only for the creation form. | API-PART-003 | Open |
 | OQ-PART-04 | What does each detail flag add to the response? The schema gives no description for `category_detail`, `path_detail`, or `tags`. | API-PART-006 | Open |
 | OQ-PART-05 | How do `PATCH` and `PUT` on the list endpoint `/api/part/` select which parts to update? | Not covered | Open |

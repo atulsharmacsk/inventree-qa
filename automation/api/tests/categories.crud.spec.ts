@@ -239,8 +239,56 @@ test.describe('Part Categories CRUD', () => {
   });
 
   test.describe('Delete', () => {
-    test.fixme('API-CAT-014: delete an empty category (blocked by OQ-ACAT-03)', async () => {});
-    test.fixme('API-CAT-015: delete a category that has a sub-category and a part (blocked by OQ-ACAT-03)', async () => {});
-    test.fixme('API-CAT-016: operations on a category that does not exist (blocked by OQ-ACAT-01)', async () => {});
+    test('API-CAT-014: delete an empty category with the flags the server requires', async ({ categories }) => {
+      const created = await test.step('Setup: POST /api/part/category/', async () => {
+        return await categories.createOrFail(newCategory());
+      });
+
+      const response = await test.step('DELETE /api/part/category/{id}/ with delete_parts=false and delete_child_categories=false', async () => {
+        return await categories.delete(created.pk);
+      });
+
+      await test.step('Check the delete returns 204 and the category is no longer listed', async () => {
+        expect(response.status()).toBe(204);
+        expect((await categories.listOrFail({ search: created.name })).count).toBe(0);
+      });
+    });
+
+    // Application finding (OQ-ACAT-03): the schema lists no request body, but the server returns 400 without delete_parts and delete_child_categories.
+    test.fixme('API-CAT-014: delete an empty category without a request body (application finding: the server returns 400)', async ({ categories }) => {
+      const created = await test.step('Setup: POST /api/part/category/', async () => {
+        return await categories.createOrFail(newCategory());
+      });
+
+      const response = await test.step('DELETE /api/part/category/{id}/ with no body, as the schema describes', async () => {
+        return await categories.deleteWithoutBody(created.pk);
+      });
+
+      await test.step('Check the delete returns 204 and the category is no longer listed', async () => {
+        expect(response.status()).toBe(204);
+        expect((await categories.listOrFail({ search: created.name })).count).toBe(0);
+      });
+    });
+
+    test.fixme('API-CAT-015: delete a category that has a sub-category and a part (blocked by OQ-ACAT-06)', async () => {});
+    test('API-CAT-016: operations on a category that does not exist', async ({ categories }) => {
+      const missingId = await test.step('Setup: create and delete a category to get an ID that no longer exists', async () => {
+        const category = await categories.createOrFail(newCategory());
+        expect((await categories.delete(category.pk)).status()).toBe(204);
+        return category.pk;
+      });
+
+      const statuses = await test.step('GET, PATCH, and DELETE /api/part/category/{id}/ for the missing ID', async () => {
+        return {
+          get: (await categories.get(missingId)).status(),
+          patch: (await categories.update(missingId, { description: 'Changed' })).status(),
+          delete: (await categories.delete(missingId)).status(),
+        };
+      });
+
+      await test.step('Check every request returns 404', async () => {
+        expect(statuses).toEqual({ get: 404, patch: 404, delete: 404 });
+      });
+    });
   });
 });

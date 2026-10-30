@@ -1,4 +1,4 @@
-import { checkPartList, checkPartShape } from '../src/checks';
+import { checkPartList, checkPartShape, expectPartsListed } from '../src/checks';
 import { PART_FLAGS } from '../../shared/models';
 import { newCategory, newPart, uniqueName } from '../src/test-data';
 import { expect, test } from './fixtures';
@@ -141,5 +141,31 @@ test.describe('Parts CRUD', () => {
     });
   }
 
-  test.fixme('API-PART-011: delete a part (blocked by OQ-PART-02)', async () => {});
+  test('API-PART-011: an active part must be made inactive before it can be deleted', async ({ parts }) => {
+    const created = await test.step('Setup: POST /api/part/ with active=true', async () => {
+      return await parts.createOrFail(newPart({ active: true }));
+    });
+
+    const rejected = await test.step('DELETE /api/part/{id}/ while the part is active', async () => {
+      return await parts.delete(created.pk);
+    });
+
+    await test.step('Check the delete is rejected with 400 and the part still exists', async () => {
+      expect(rejected.status()).toBe(400);
+      expect((await parts.getOrFail(created.pk)).active).toBe(true);
+    });
+
+    await test.step('PATCH /api/part/{id}/ with active=false', async () => {
+      expect((await parts.update(created.pk, { active: false })).status()).toBe(200);
+    });
+
+    const deleted = await test.step('DELETE /api/part/{id}/ again', async () => {
+      return await parts.delete(created.pk);
+    });
+
+    await test.step('Check the delete returns 204 and the part is no longer listed', async () => {
+      expect(deleted.status()).toBe(204);
+      await expectPartsListed(await parts.listFiltered({ search: created.name }), []);
+    });
+  });
 });

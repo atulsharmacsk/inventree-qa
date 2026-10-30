@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { test as base, expect, type APIRequestContext } from '@playwright/test';
-import { withApiTokens, type TokenForRole } from '../../shared/auth';
+import { requestToken, revokeToken, withApiTokens, type TokenForRole } from '../../shared/auth';
 import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
@@ -19,6 +20,10 @@ type Fixtures = {
   skipWithoutRole: void;
   authenticatedRequest: APIRequestContext;
   parts: PartService;
+  /** Builds a part service that sends this `Authorization` header, or none for `null`; for authentication checks. */
+  partsWithAuthorization: (authorization: string | null) => Promise<PartService>;
+  /** An API token that was issued and revoked within this test. */
+  revokedToken: string;
   categories: CategoryService;
   stockItems: StockItemService;
   stockLocations: StockLocationService;
@@ -68,6 +73,30 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     const parts = new PartService(authenticatedRequest);
     await use(parts);
     reportCleanup(testInfo, await parts.deleteCreated());
+  },
+
+  partsWithAuthorization: async ({ playwright, baseURL }, use, testInfo) => {
+    const contexts: APIRequestContext[] = [];
+    await use(async (authorization) => {
+      const context = await playwright.request.newContext({
+        baseURL,
+        extraHTTPHeaders: authorization === null ? {} : { Authorization: authorization },
+      });
+      contexts.push(context);
+      return new PartService(withHttpLogging(context, testInfo));
+    });
+    for (const context of contexts) await context.dispose();
+  },
+
+  revokedToken: async ({ playwright, baseURL }, use) => {
+    const credentials = credentialsFor('SUPERUSER');
+    if (!credentials) throw new Error(missingRoleMessage('SUPERUSER'));
+    const login = await playwright.request.newContext({ baseURL, httpCredentials: { ...credentials, send: 'always' } });
+    const name = `playwright-api-revoked-${randomUUID().slice(0, 8)}`;
+    const token = await requestToken(login, name);
+    await revokeToken(login, name);
+    await login.dispose();
+    await use(token);
   },
 
   stockLocations: async ({ authenticatedRequest }, use, testInfo) => {

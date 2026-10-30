@@ -26,6 +26,11 @@ export class PartService {
     return this.request.get('/api/part/', { params: { limit: DEFAULT_PAGE_LIMIT, ...filters } });
   }
 
+  /** Lists without the `limit` parameter that the schema marks as required. */
+  listWithoutLimit(filters: PartFilters): Promise<APIResponse> {
+    return this.request.get('/api/part/', { params: filters });
+  }
+
   get(id: number): Promise<APIResponse> {
     return this.request.get(`/api/part/${id}/`);
   }
@@ -36,6 +41,24 @@ export class PartService {
 
   replace(id: number, part: NewPart): Promise<APIResponse> {
     return this.request.put(`/api/part/${id}/`, { data: part });
+  }
+
+  /** For rejection checks: sends a body `NewPart` cannot express (wrong type, `null`, missing field). */
+  createInvalid(body: Record<string, unknown>): Promise<APIResponse> {
+    return this.create(body as NewPart);
+  }
+
+  updateInvalid(id: number, body: Record<string, unknown>): Promise<APIResponse> {
+    return this.request.patch(`/api/part/${id}/`, { data: body });
+  }
+
+  replaceInvalid(id: number, body: Record<string, unknown>): Promise<APIResponse> {
+    return this.request.put(`/api/part/${id}/`, { data: body });
+  }
+
+  /** Sends `DELETE` to the list endpoint, which the schema does not list. */
+  deleteList(): Promise<APIResponse> {
+    return this.request.delete('/api/part/');
   }
 
   delete(id: number): Promise<APIResponse> {

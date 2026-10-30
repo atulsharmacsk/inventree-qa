@@ -42,6 +42,7 @@ export type Part = {
   default_location: number | null;
   category_default_location: number | null;
   units: string | null;
+  minimum_stock: number;
   barcode_hash: string;
   starred: boolean;
   thumbnail: string;

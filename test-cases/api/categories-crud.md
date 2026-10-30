@@ -205,33 +205,33 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 ### API-CAT-014: Delete an empty category
 - **Priority:** P1
 - **Type:** Positive
-- **Automation candidate:** Yes, after OQ-ACAT-03
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category with a unique name, no sub-categories, and no parts.
-- **Request:** `DELETE /api/part/category/{id}/`, then `GET /api/part/category/?search=<unique name>&limit=<n>`.
-- **Expected status:** 204 for the delete; 200 for the list.
+- **Request:** Two variants, each followed by `GET /api/part/category/?search=<unique name>&limit=<n>`: (a) `DELETE /api/part/category/{id}/` with body `{"delete_parts": false, "delete_child_categories": false}`; (b) the same `DELETE` with no body, as the schema describes it.
+- **Expected status:** 204 for the delete in both variants; 200 for the list. Observed on local 1.6.3: variant (a) returns 204; variant (b) returns 400 (application finding, OQ-ACAT-03), so (b) is `fixme`.
 - **Expected business result:** The list does not contain the deleted category.
 - **Requirements:** REQ-ACAT-07, REQ-ACAT-04
 - **Sources:** schema `DELETE /api/part/category/{id}/`
-- **Open question:** OQ-ACAT-03 (whether the request needs a body).
+- **Open question:** OQ-ACAT-03 (resolved as an application finding: the request needs an undocumented body).
 
 ### API-CAT-015: Delete a category that has a sub-category and a part
 - **Priority:** P1
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-ACAT-03
+- **Automation candidate:** Yes, after OQ-ACAT-06
 - **Preconditions:** Test-owned category `A` with test-owned sub-category `B` and test-owned part `P` in `A`.
 - **Request:** `DELETE /api/part/category/{A id}/`, then `GET /api/part/category/{B id}/` and `GET /api/part/{P id}/`.
-- **Expected status:** See OQ-ACAT-03.
-- **Expected business result:** See OQ-ACAT-03. No data outside the test-owned records changes.
+- **Expected status:** See OQ-ACAT-06.
+- **Expected business result:** See OQ-ACAT-06. No data outside the test-owned records changes.
 - **Requirements:** REQ-ACAT-07, REQ-ACAT-09
 - **Sources:** schema `DELETE /api/part/category/{id}/`
 
 ### API-CAT-016: Operations on a category that does not exist
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-ACAT-01
+- **Automation candidate:** Yes
 - **Preconditions:** An ID that belongs to no category (for example, the ID deleted in API-CAT-014).
 - **Request:** `GET`, `PATCH`, and `DELETE` on `/api/part/category/{id}/`.
-- **Expected status:** See OQ-ACAT-01.
+- **Expected status:** 404 for each request.
 - **Expected business result:** No category is created or changed.
 - **Requirements:** REQ-ACAT-03, REQ-ACAT-05, REQ-ACAT-07
 - **Sources:** schema `GET`/`PATCH`/`DELETE /api/part/category/{id}/`
@@ -252,8 +252,9 @@ All 10 requirements are covered by at least one case. REQ-ACAT-10 is covered onl
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-ACAT-01 | Which status is returned for a category ID that does not exist? The schema documents only success responses. | API-CAT-016 | Open |
+| OQ-ACAT-01 | Which status is returned for a category ID that does not exist? The schema documents only success responses. | API-CAT-016 | Resolved: 404 `No PartCategory matches the given query.` for `GET`, `PATCH`, and `DELETE`. Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-ACAT-02 | Is a circular parent (a category as its own parent, or under its own descendant) rejected, and with which status? The schema does not describe this validation. | API-CAT-013 | Open |
-| OQ-ACAT-03 | What happens to sub-categories and parts when their category is deleted? `DELETE /api/part/category/{id}/` documents no query parameters or request body in API 561. Observed earlier on local 1.6.3 (README Open Review Findings): a `DELETE` without a body returns 400, because `delete_parts` and `delete_child_categories` are required in the body. Not yet confirmed by the user as intended behaviour. | API-CAT-014, API-CAT-015 | Open |
+| OQ-ACAT-03 | Does `DELETE /api/part/category/{id}/` need a request body? The schema (API 561) documents no query parameters or request body, but on local 1.6.3 a `DELETE` without a body returns 400, because `delete_parts` and `delete_child_categories` are required in the body. | API-CAT-014 | Resolved as an application finding, confirmed by the user (2026-10-30): the API contract is incomplete. The schema omits a required request body. |
 | OQ-ACAT-04 | How do `PATCH` and `PUT` on the list endpoint `/api/part/category/` select which categories to update? | Not covered | Open |
 | OQ-ACAT-05 | What do `level`, `pathstring`, `path`, `subcategories`, and `path_detail` contain? The schema gives no description or format for them. | API-CAT-003, API-CAT-006, API-CAT-011 | Open |
+| OQ-ACAT-06 | What happens to the sub-categories and parts of a deleted category for each combination of `delete_parts` and `delete_child_categories`? Neither the schema nor the documentation describes the flags. | API-CAT-015 | Open |

@@ -10,7 +10,7 @@ Covers required, maximum-length, nullable, read-only, and write-only fields on t
 
 **Test isolation:** every case creates its own records with unique names and removes only those. "Not created" is checked with `GET /api/part/?search=<token>&limit=<n>` (or the category equivalent); "unchanged" is checked with `GET` on the record.
 
-**Status codes:** the schema lists only success responses (200, 201, 204). Error statuses for rejected values are OQ-VAL-01, consistent with OQ-EDGE-02; the business result (nothing created or changed) is still asserted.
+**Status codes:** the schema lists only success responses (200, 201, 204). A rejected value returns 400 with a field-keyed body on local 1.6.3 (OQ-VAL-01, confirmed by the user, 2026-10-30); the business result (nothing created or changed) is also asserted.
 
 ## Endpoints
 
@@ -58,10 +58,10 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-001: Create a part without `name`
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` with body `{"description": "<unique token>"}`, then `GET /api/part/?search=<token>&limit=<n>`.
-- **Expected status:** See OQ-VAL-01 for the `POST`; 200 for the `GET`.
+- **Expected status:** 400 for the `POST`; 200 for the `GET`.
 - **Expected business result:** No part is created: the search returns `count` 0.
 - **Requirements:** REQ-VAL-01
 - **Sources:** schema `POST /api/part/` request body `required`; `docs:part/create/#create-part-form`
@@ -69,10 +69,10 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-002: Create a category without `name`
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/category/` with body `{"description": "<unique token>"}`, then `GET /api/part/category/?search=<token>&limit=<n>`.
-- **Expected status:** See OQ-VAL-01 for the `POST`; 200 for the `GET`.
+- **Expected status:** 400 for the `POST`; 200 for the `GET`.
 - **Expected business result:** No category is created: the search returns `count` 0.
 - **Requirements:** REQ-VAL-02
 - **Sources:** schema `POST /api/part/category/` request body `required`; `docs:part/#part-category`
@@ -99,7 +99,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-004: Full update without `name`
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part and a test-owned category, each with a known `name` and `description`.
 - **Request:** One request per row, then `GET` the record.
 
@@ -108,7 +108,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `PUT /api/part/{id}/` | `{"description": "<new value>"}` |
   | `PUT /api/part/category/{id}/` | `{"description": "<new value>"}` |
 
-- **Expected status:** See OQ-VAL-01 for the `PUT`; 200 for the `GET`.
+- **Expected status:** 400 for the `PUT`; 200 for the `GET`.
 - **Expected business result:** Each record keeps its original `name` and `description`.
 - **Requirements:** REQ-VAL-01, REQ-VAL-02
 - **Sources:** schema `PUT /api/part/{id}/`, `PUT /api/part/category/{id}/` request body `required`
@@ -140,7 +140,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-006: Part text fields one character over the maximum
 - **Priority:** P1
 - **Type:** Negative (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` per row, with a unique `description` token (except the `description` row, which uses a unique 251-character string), then search for the token.
 
@@ -153,7 +153,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `keywords` | 251 |
   | `units` | 21 |
 
-- **Expected status:** See OQ-VAL-01.
+- **Expected status:** 400.
 - **Expected business result:** No part is created for any row.
 - **Requirements:** REQ-VAL-03
 - **Sources:** schema Part `maxLength`
@@ -161,10 +161,10 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-007: Over-length value on a partial update
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part with a known `name` and `description`.
 - **Request:** `PATCH /api/part/{id}/` with `name` of 101 characters, then `GET /api/part/{id}/`.
-- **Expected status:** See OQ-VAL-01 for the `PATCH`; 200 for the `GET`.
+- **Expected status:** 400 for the `PATCH`; 200 for the `GET`.
 - **Expected business result:** `name` is unchanged.
 - **Requirements:** REQ-VAL-03
 - **Sources:** schema `PATCH /api/part/{id}/`, Part `name` maxLength
@@ -191,7 +191,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-009: Category text fields one character over the maximum
 - **Priority:** P2
 - **Type:** Negative (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/category/` per row with a unique token in `name` (or `description` for the `name` row), then search for the token.
 
@@ -202,7 +202,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `default_keywords` | 251 |
   | `icon` | 101 |
 
-- **Expected status:** See OQ-VAL-01.
+- **Expected status:** 400.
 - **Expected business result:** No category is created for any row.
 - **Requirements:** REQ-VAL-04
 - **Sources:** schema Category `maxLength`
@@ -210,16 +210,16 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-010: Part `link` length and format
 - **Priority:** P3
 - **Type:** Boundary (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` per row with a unique `name` and the given `link`, then `GET` the part (accepted rows) or search for the name (rejected rows).
 
   | `link` | Expected |
   |---|---|
   | `https://example.com/` followed by `a` up to exactly 2000 characters | 201; stored exactly |
-  | Same pattern, 2001 characters | Rejected (OQ-VAL-01); no part created |
+  | Same pattern, 2001 characters | 400; no part created |
   | `""` | 201; stored as `""` |
-  | `not a url` | Rejected (OQ-VAL-01); no part created |
+  | `not a url` | 400; no part created |
 
 - **Expected status:** As in the table.
 - **Expected business result:** As in the table.
@@ -242,7 +242,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-012: Set nullable part fields to `null`
 - **Priority:** P2
 - **Type:** Positive (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-05
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part with non-empty `keywords`, `revision`, `units` (`kg`), and `link`.
 - **Request:** `PATCH /api/part/{id}/` setting one field per row to `null`, then `GET /api/part/{id}/`.
 
@@ -254,14 +254,14 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `link` |
 
 - **Expected status:** 200 for each `PATCH`, then 200.
-- **Expected business result:** The field no longer holds its previous value; whether it is returned as `null` or `""`: see OQ-VAL-05.
+- **Expected business result:** The field is returned as `null`.
 - **Requirements:** REQ-VAL-05
 - **Sources:** schema `PATCH /api/part/{id}/`, Part `nullable` fields
 
 ### API-VAL-013: `null` on non-nullable part fields
 - **Priority:** P2
 - **Type:** Negative (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part with known values for every field in the table.
 - **Request:** `PATCH /api/part/{id}/` setting one field per row to `null`, then `GET /api/part/{id}/`.
 
@@ -273,7 +273,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `active` | boolean |
   | `minimum_stock` | number |
 
-- **Expected status:** See OQ-VAL-01 for each `PATCH`; 200 for the `GET`.
+- **Expected status:** 400 for each `PATCH`; 200 for the `GET`.
 - **Expected business result:** Every field keeps its original value.
 - **Requirements:** REQ-VAL-05
 - **Sources:** schema Part fields without `nullable`
@@ -283,8 +283,8 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
 ### API-VAL-014: Set nullable category fields to `null`
 - **Priority:** P3
 - **Type:** Positive (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-05
-- **Preconditions:** A test-owned category with non-empty `default_keywords` and a test-owned stock location as `default_location`.
+- **Automation candidate:** Yes
+- **Preconditions:** A test-owned category with non-empty `default_keywords`, a test-owned stock location as `default_location`, and an `icon` in the `package:name:variant` format (for example `ti:box:outline`; see OQ-VAL-04).
 - **Request:** `PATCH /api/part/category/{id}/` setting one field per row to `null`, then `GET /api/part/category/{id}/`.
 
   | Field |
@@ -294,17 +294,17 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
   | `icon` |
 
 - **Expected status:** 200 for each `PATCH`, then 200.
-- **Expected business result:** `default_location` is `null`. For the string fields, see OQ-VAL-05.
+- **Expected business result:** `default_keywords` and `default_location` are returned as `null`; `icon` is returned as an empty string (`""`), confirmed by the user (OQ-VAL-05).
 - **Requirements:** REQ-VAL-06
 - **Sources:** schema `PATCH /api/part/category/{id}/`, Category `nullable` fields
 
 ### API-VAL-015: `null` on non-nullable category fields
 - **Priority:** P2
 - **Type:** Negative (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category with a known `name`, `description`, and `structural: false`.
 - **Request:** `PATCH /api/part/category/{id}/` setting `name`, `description`, or `structural` to `null` (one per request), then `GET /api/part/category/{id}/`.
-- **Expected status:** See OQ-VAL-01 for each `PATCH`; 200 for the `GET`.
+- **Expected status:** 400 for each `PATCH`; 200 for the `GET`.
 - **Expected business result:** Every field keeps its original value.
 - **Requirements:** REQ-VAL-06
 - **Sources:** schema Category fields without `nullable`
@@ -314,21 +314,21 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
 ### API-VAL-016: Read-only part fields sent on create are not stored
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-02
+- **Automation candidate:** Yes
 - **Preconditions:** No stock exists for the new part (it is created by the test).
 - **Request:** `POST /api/part/` with a unique `name` and these read-only values: `in_stock: 500`, `total_in_stock: 500`, `stock_item_count: 5`, `revision_count: 5`, `starred: true`, `creation_date: "2000-01-01"`, `barcode_hash: "pw-fake-hash"`, `full_name: "pw-fake-full-name"`. If created, `GET /api/part/{id}/`; otherwise search for the name.
-- **Expected status:** See OQ-VAL-02.
-- **Expected business result:** If the part is created, none of the listed fields returns the submitted value. If the request is rejected, no part is created.
+- **Expected status:** 201, then 200.
+- **Expected business result:** The part is created and none of the listed fields returns the submitted value.
 - **Requirements:** REQ-VAL-07
 - **Sources:** schema Part `readOnly` fields
 
 ### API-VAL-017: Read-only part fields sent on update do not change the part
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-02
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned part; record its `pk`, `in_stock`, `total_in_stock`, `creation_date`, `full_name`, and `barcode_hash`.
 - **Request:** `PATCH /api/part/{id}/` with `pk: <another integer>`, `in_stock: 999`, `total_in_stock: 999`, `creation_date: "2000-01-01"`, `full_name: "pw-fake-full-name"`, `barcode_hash: "pw-fake-hash"`, then `GET /api/part/{id}/`.
-- **Expected status:** See OQ-VAL-02 for the `PATCH`; 200 for the `GET`.
+- **Expected status:** 200 for the `PATCH` and for the `GET`.
 - **Expected business result:** Every recorded field still has its original value.
 - **Requirements:** REQ-VAL-07
 - **Sources:** schema `PATCH /api/part/{id}/`, Part `readOnly` fields
@@ -336,10 +336,10 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
 ### API-VAL-018: Read-only category fields sent on update do not change the category
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-VAL-02
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category with one test-owned sub-category and one test-owned part; record its `pk`, `level`, `pathstring`, `part_count`, and `subcategories`.
 - **Request:** `PATCH /api/part/category/{id}/` with `level: 7`, `pathstring: "pw/fake/path"`, `part_count: 99`, `subcategories: 99`, `pk: <another integer>`, then `GET /api/part/category/{id}/`.
-- **Expected status:** See OQ-VAL-02 for the `PATCH`; 200 for the `GET`.
+- **Expected status:** 200 for the `PATCH` and for the `GET`.
 - **Expected business result:** Every recorded field still has its original value.
 - **Requirements:** REQ-VAL-08
 - **Sources:** schema `PATCH /api/part/category/{id}/`, Category `readOnly` fields
@@ -360,14 +360,14 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
 ### API-VAL-020: `default_expiry` minimum
 - **Priority:** P3
 - **Type:** Boundary (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` per row with a unique `name` and the given `default_expiry`, then `GET` the part or search for the name.
 
   | `default_expiry` | Expected |
   |---|---|
   | `0` | 201; stored as `0` |
-  | `-1` | Rejected (OQ-VAL-01); no part created |
+  | `-1` | 400; no part created |
 
 - **Expected status:** As in the table.
 - **Expected business result:** As in the table.
@@ -377,14 +377,14 @@ Note: on `ENV=REMOTE` (demo 1.7.0 dev) some parts return `IPN: null` (OQ-PART-07
 ### API-VAL-021: Supplier part `SKU` maximum length
 - **Priority:** P3
 - **Type:** Boundary (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned company with `is_supplier: true` and a test-owned part with `purchaseable: true`.
 - **Request:** `POST /api/company/part/` per row with `part`, `supplier`, and the given `SKU`, then `GET /api/company/part/?part=<id>&limit=<n>`.
 
   | `SKU` length | Expected |
   |---|---|
   | 100 | 201; stored exactly |
-  | 101 | Rejected (OQ-VAL-01); no supplier part created |
+  | 101 | 400; no supplier part created |
 
 - **Expected status:** As in the table.
 - **Expected business result:** As in the table. The test removes the supplier part it created before the part.
@@ -408,8 +408,8 @@ All 11 requirements (REQ-VAL-01 to REQ-VAL-11) are covered by at least one case.
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-VAL-01 | Which status and error body are returned when a field fails validation (missing required field, over maximum length, `null` on a non-nullable field, invalid URI, value below `minimum`)? The schema documents only success responses. Same gap as OQ-EDGE-02. | API-VAL-001, 002, 004, 006, 007, 009, 010, 013, 015, 020, 021 | Open |
-| OQ-VAL-02 | Are read-only fields in a request body ignored (2xx, values not stored) or rejected? The schema marks them `readOnly` but does not say. | API-VAL-016, 017, 018 | Open |
+| OQ-VAL-01 | Which status and error body are returned when a field fails validation (missing required field, over maximum length, `null` on a non-nullable field, invalid URI, value below `minimum`)? The schema documents only success responses. Same gap as OQ-EDGE-02. | API-VAL-001, 002, 004, 006, 007, 009, 010, 013, 015, 020, 021 | Resolved: 400 with a field-keyed body (for example `{"name": ["This field is required."]}`). Local 1.6.3, confirmed by user (2026-10-30). |
+| OQ-VAL-02 | Are read-only fields in a request body ignored (2xx, values not stored) or rejected? The schema marks them `readOnly` but does not say. | API-VAL-016, 017, 018 | Resolved: intended behaviour. Read-only fields in a request body are ignored: the request succeeds (201 or 200) and the submitted values are not stored. Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-VAL-03 | Is an empty or whitespace-only `name` accepted for parts and categories? The schema gives `maxLength` but no `minLength`; `docs:part/create/` says *Name* is required. | API-VAL-003 | Open |
 | OQ-VAL-04 | What makes a category `icon` value valid? The schema says only "Icon (optional)", maxLength 100. A 100-character arbitrary string may fail for content, not length. | API-VAL-008 | Open |
-| OQ-VAL-05 | When a nullable text field is set to `null`, is it returned as `null` or as `""`? Both match the schema. | API-VAL-012, 014 | Open |
+| OQ-VAL-05 | When a nullable text field is set to `null`, is it returned as `null` or as `""`? Both match the schema. | API-VAL-012, 014 | Resolved: intended behaviour. A nullable field set to `null` returns `null`, except a category `icon`, which returns `""`. Local 1.6.3, confirmed by user (2026-10-30). |
