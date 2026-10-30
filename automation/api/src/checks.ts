@@ -1,5 +1,6 @@
 import Ajv, { type AnySchema, type ErrorObject } from 'ajv';
-import { expect } from '@playwright/test';
+import { expect, type APIResponse } from '@playwright/test';
+import type { Part, PartList } from '../../shared/models';
 import partSchema from '../schemas/part.schema.json';
 import partListSchema from '../schemas/paginated-part-list.schema.json';
 import categorySchema from '../schemas/category.schema.json';
@@ -54,6 +55,16 @@ export function checkMatchesSchema(body: unknown, schema: SchemaFile): void {
 export const checkPartShape = (part: unknown): void => checkMatchesSchema(part, partSchema);
 
 export const checkPartList = (list: unknown): void => checkMatchesSchema(list, partListSchema);
+
+/** Checks a list response is 200 with a valid page that holds exactly `expected`, in any order. */
+export async function expectPartsListed(response: APIResponse, expected: Part[]): Promise<PartList> {
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as PartList;
+  checkPartList(body);
+  expect(body.results.map((part) => part.pk).sort()).toEqual(expected.map((part) => part.pk).sort());
+  expect(body.count).toBe(expected.length);
+  return body;
+}
 
 export const checkCategoryShape = (category: unknown): void => checkMatchesSchema(category, categorySchema);
 

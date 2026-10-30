@@ -1,6 +1,6 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { deleteWithRetry } from '../cleanup';
-import { DEFAULT_PAGE_LIMIT, type NewPart, type Part } from '../models';
+import { DEFAULT_PAGE_LIMIT, type NewPart, type Part, type PartFilters } from '../models';
 
 /** Sends requests to /api/part/ and remembers the parts a test creates or adopts. */
 export class PartService {
@@ -20,6 +20,10 @@ export class PartService {
   // The schema marks `limit` as required; without it the server returns an unpaginated array.
   list(limit = DEFAULT_PAGE_LIMIT): Promise<APIResponse> {
     return this.request.get('/api/part/', { params: { limit } });
+  }
+
+  listFiltered(filters: PartFilters): Promise<APIResponse> {
+    return this.request.get('/api/part/', { params: { limit: DEFAULT_PAGE_LIMIT, ...filters } });
   }
 
   get(id: number): Promise<APIResponse> {
