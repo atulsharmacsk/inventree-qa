@@ -1,23 +1,13 @@
 import type { Locator, Page, Response } from '@playwright/test';
 import type { PartFormInput } from '../models/part';
+import { ModalFormComponent } from './modal-form.component';
 
-// Form inputs carry generated aria-labels (`text-field-<field>`) instead of label associations; they match API field names.
-export class PartFormComponent {
-  readonly dialog: Locator;
-  readonly submitButton: Locator;
-  readonly cancelButton: Locator;
-  readonly formError: Locator;
+const PART_ENDPOINT = /\/api\/part\/(\d+\/)?$/;
 
-  constructor(private page: Page, title: string) {
-    // The dialog's aria-labelledby is not always resolved, so match on its title text instead of its accessible name.
-    this.dialog = page.getByRole('dialog').filter({ hasText: title });
-    this.submitButton = this.dialog.getByRole('button', { name: 'Submit' });
-    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
-    this.formError = this.dialog.getByRole('alert', { name: 'Form Error' });
-  }
-
-  textField(field: keyof PartFormInput): Locator {
-    return this.dialog.getByRole('textbox', { name: `text-field-${field}` });
+/** The Add Part and Edit Part dialogs. */
+export class PartFormComponent extends ModalFormComponent {
+  constructor(page: Page, title: 'Add Part' | 'Edit Part') {
+    super(page, title);
   }
 
   /** Validation message the form shows for an empty required field. */
@@ -25,18 +15,18 @@ export class PartFormComponent {
     return this.dialog.getByText('This field is required.');
   }
 
-  async waitUntilReady(): Promise<void> {
-    await this.submitButton.waitFor();
+  get categoryField(): Locator {
+    return this.dialog.getByRole('textbox', { name: 'tree-field-category' });
+  }
+
+  get activeSwitch(): Locator {
+    return this.switchField('active');
   }
 
   async fill(input: PartFormInput): Promise<void> {
     for (const [field, value] of Object.entries(input) as [keyof PartFormInput, string | undefined][]) {
       if (value !== undefined) await this.textField(field).fill(value);
     }
-  }
-
-  get categoryField(): Locator {
-    return this.dialog.getByRole('textbox', { name: 'tree-field-category' });
   }
 
   /** Opens the category tree field, filters it by name, and picks the matching option. */
@@ -46,14 +36,15 @@ export class PartFormComponent {
     await this.page.getByRole('listbox').getByRole('option').filter({ hasText: name }).first().click();
   }
 
+  /** Sets the Active switch; the edit form loads the part's values first, so this waits for the switch. */
+  async setActive(active: boolean): Promise<void> {
+    await this.activeSwitch.waitFor({ state: 'attached' });
+    // The Mantine switch input is visually hidden behind its track, so it is toggled with force.
+    await this.activeSwitch.setChecked(active, { force: true });
+  }
+
   /** Submits and returns the server response to the part POST/PATCH. */
-  async submit(): Promise<Response> {
-    const saved = this.page.waitForResponse(
-      (response) => /\/api\/part\/(\d+\/)?$/.test(new URL(response.url()).pathname) && ['POST', 'PATCH', 'PUT'].includes(response.request().method()),
-    );
-    // The "First Use Tour" toast can cover Submit; keyboard activation avoids changing the user's tour state.
-    await this.submitButton.focus();
-    await this.page.keyboard.press('Enter');
-    return saved;
+  submit(): Promise<Response> {
+    return this.submitAndWait(PART_ENDPOINT, ['POST', 'PATCH', 'PUT']);
   }
 }

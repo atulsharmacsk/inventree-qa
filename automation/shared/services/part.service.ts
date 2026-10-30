@@ -68,10 +68,12 @@ export class PartService {
     return body.results.filter((part) => part.name === name);
   }
 
-  /** Deletes only the parts this test created and returns any failures. */
+  /** Deletes only the parts this test created (newest, so variants, first) and returns any failures. */
   async deleteCreated(): Promise<string[]> {
     const failures: string[] = [];
-    for (const id of this.createdIds) {
+    for (const id of [...this.createdIds].reverse()) {
+      // Locked parts cannot be deleted while locking is enabled, so unlock before deactivating.
+      await this.update(id, { locked: false });
       // Local 1.6.3 rejects deleting an active part with 400 (OQ-PART-02), so deactivate first.
       await this.update(id, { active: false });
       const response = await deleteWithRetry(() => this.delete(id));

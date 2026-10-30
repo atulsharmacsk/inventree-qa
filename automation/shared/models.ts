@@ -35,12 +35,16 @@ export type Part = {
   full_name: string;
   description: string;
   IPN: string | null;
+  revision: string | null;
+  keywords: string | null;
   category: number | null;
   category_name?: string;
   units: string | null;
   barcode_hash: string;
   starred: boolean;
   thumbnail: string;
+  locked: boolean;
+  variant_of: number | null;
 } & Record<PartFlag, boolean>;
 
 /** Fields sent when creating a part. Only `name` is required. */
@@ -48,11 +52,16 @@ export type NewPart = {
   name: string;
   description?: string;
   IPN?: string;
+  revision?: string;
   keywords?: string;
   units?: string;
   category?: number;
   minimum_stock?: number;
   maximum_stock?: number;
+  variant_of?: number;
+  locked?: boolean;
+  /** Write-only: whether to copy the category's parameter templates (default true). */
+  copy_category_parameters?: boolean;
 } & Partial<Record<PartFlag, boolean>>;
 
 /** One page of results from a list endpoint. */
@@ -92,6 +101,33 @@ export type CategoryFilters = {
   parent?: number;
   search?: string;
   top_level?: boolean;
+};
+
+/** A stock item as returned by `GET /api/stock/`. */
+export type StockItem = {
+  pk: number;
+  part: number;
+  quantity: number;
+  serial: string | null;
+};
+
+/** Fields sent when creating stock. `serial_numbers` needs a trackable part. */
+export type NewStockItem = {
+  part: number;
+  quantity: number;
+  serial_numbers?: string;
+};
+
+/** Query filters for `GET /api/stock/` used by the tests. */
+export type StockItemFilters = {
+  part?: number;
+  serial?: string;
+};
+
+/** A global setting as returned by `GET /api/settings/global/{key}/`. */
+export type GlobalSetting = {
+  key: string;
+  value: string;
 };
 
 /** One item of `GET /api/part/category/tree/`. */
