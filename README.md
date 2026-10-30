@@ -34,20 +34,20 @@ Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate
 |---|---|---|
 | Pull request to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
 | Push (merge) to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
-| Nightly schedule (`0 2 * * *` UTC, default branch) | Everything (no `--grep`), 120-minute timeout | `REMOTE` |
-| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (default `@smoke`; `.` runs everything) | `environment` input |
+| Nightly schedule (`0 2 * * *` UTC, default branch) | Everything (no `--grep`), split over 4 shards, 120-minute timeout | `REMOTE` |
+| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (empty runs `@smoke`, or the whole suite when `shards` is more than 1; `.` always runs everything) | `environment` input |
 
 Build parameters (manual runs):
 
 | Parameter | Values |
 |---|---|
 | `environment` | `LOCALHOST` → `http://localhost` (runs on a `self-hosted` runner on the Docker host); `REMOTE` → `https://demo.inventree.org` (GitHub-hosted runner). Passed to the tests as `ENV`; the URL comes from `automation/shared/environments.ts` |
-| `tags` | Playwright `--grep` filter, default `@smoke` |
+| `tags` | Playwright `--grep` filter. Empty runs `@smoke`, or the whole suite when `shards` is more than 1 |
 | `workers` | Parallel workers, passed as `WORKERS`: a number (`4`) or percentage (`50%`). Empty uses the project default (UI `1`, API `1` on CI) |
 | `retries` | Retries per failed test, passed as `RETRIES`, default `0`. Tests that pass only on retry are marked `flaky` in both reports |
-| `shard` | Playwright `--shard`, for example `1/4`. Empty runs everything |
+| `shards` | Number of parallel runners per project, 1 to 8 (empty or `1` runs everything in one job). A small `plan` job turns it into a matrix, and shard `N` of `total` runs Playwright `--shard N/total`. With `tags` empty and `shards` above 1, the shards cover the whole suite; a `@smoke` filter would leave only a handful of tests to split |
 
-**Scaling.** Pull requests stay fast with `@smoke`; the nightly run is the regression gate. When the suite outgrows one job, start one manual run per shard (`1/4` to `4/4`, `tags` set to `.`) or turn `shard` into a matrix dimension; each job already has its own report artifacts and every test owns its data, so shards do not share state. The remaining shared state is the target instance (its global settings and one superuser), so raising `WORKERS` is limited by that instance, not by the framework: the local Docker server drops requests under parallel UI load (see `automation/ui/README.md`).
+**Scaling.** Pull requests stay fast with `@smoke`; the nightly run is the regression gate. When the suite outgrows one job, raise `shards`: the workflow fans out one job per project and shard (4 shards means 8 jobs), each with its own `playwright-report-<project>-shard-<n>` and `allure-report-<project>-shard-<n>` artifacts. Reports are per shard and are not merged. Every test owns its data, so shards do not share state. The remaining shared state is the target instance (its global settings and one superuser), so raising `WORKERS` is limited by that instance, not by the framework: the local Docker server drops requests under parallel UI load (see `automation/ui/README.md`).
 
 **Roles are chosen in code, not in the pipeline,** so one build can run tests as several users. A test passes its role (`SUPERUSER` by default, or `READER`) with `test.use({ role: 'READER' })`, and `automation/shared/roles.ts` reads `<ROLE>_USERNAME` / `<ROLE>_PASSWORD` (for example `SUPERUSER_USERNAME`, `READER_USERNAME`). In the API project the role applies to every request in that block; in the UI project it selects the browser login (one storage state per role, saved by `auth.setup.ts`), while API setup and cleanup stay on the superuser. Tests for a role with no credentials in the current environment are skipped with a reason. Each login is checked against `GET /api/user/me/`: `SUPERUSER` must be a superuser, and `READER` must be a non-staff, non-superuser account. `LOCALHOST` has only the superuser, so leave the reader variables empty there. Trace redaction covers every configured password.
 
@@ -58,7 +58,7 @@ Create two GitHub environments (*Settings > Environments*) with these secrets. N
 | `LOCALHOST` | `SUPERUSER_USERNAME`, `SUPERUSER_PASSWORD` |
 | `REMOTE` | `SUPERUSER_USERNAME`, `SUPERUSER_PASSWORD`, `READER_USERNAME`, `READER_PASSWORD` |
 
-The superuser secrets are required; the job fails before tests run without them. The public demo may run a newer version than local 1.6.3 / API 561. Pull requests from forks receive no secrets. Reports and redacted traces are uploaded as `playwright-report-api` and `playwright-report-ui` artifacts, and the Allure reports as `allure-report-api` and `allure-report-ui`.
+The superuser secrets are required; the job fails before tests run without them. The public demo may run a newer version than local 1.6.3 / API 561. Pull requests from forks receive no secrets. Reports and redacted traces are uploaded as `playwright-report-api-shard-1` and `playwright-report-ui-shard-1` artifacts (one per shard), and the Allure reports as `allure-report-api-shard-1` and `allure-report-ui-shard-1`.
 
 Smoke set: API-PART-001, API-PART-005, API-CAT-001, API-CAT-003, SMOKE-001, SMOKE-002, UI-CREATE-001 (the UI login setup always runs).
 

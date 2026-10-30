@@ -19,9 +19,9 @@ on:
         options: [REMOTE, LOCALHOST]
         default: REMOTE
       tags:
-        description: 'Playwright --grep filter, for example @smoke, "@smoke|API-CAT", or "." for the whole suite'
+        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Empty runs @smoke, or the whole suite when shards is more than 1; "." always runs everything'
         type: string
-        default: '@smoke'
+        default: ''
       workers:
         description: 'Parallel workers: a number (4) or percentage (50%). Empty uses the project default (UI 1, API 1 on CI)'
         type: string
@@ -30,11 +30,11 @@ on:
         description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
         type: string
         default: '0'
-      shard:
-        description: 'Playwright --shard, for example 1/4. Start one run per shard to split a large suite; empty runs everything'
+      shards:
+        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; with tags empty, more than 1 covers the whole suite, not just @smoke'
         type: string
         default: ''
-  # Nightly full regression against the demo server (REMOTE); the workflow runs on the default branch only.
+  # Nightly full regression against the demo server (REMOTE), split over 4 shards; the workflow runs on the default branch only.
   schedule:
     - cron: '0 2 * * *'
 
@@ -46,8 +46,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides how many shard jobs the matrix below starts: 4 nightly, the `shards` input on manual runs, otherwise 1.
+  plan:
+    name: Plan shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      total: ${{ steps.plan.outputs.total }}
+    env:
+      EVENT: ${{ github.event_name }}
+      SHARDS_INPUT: ${{ inputs.shards }}
+    steps:
+      - id: plan
+        shell: bash
+        run: |
+          total=1
+          if [ "$EVENT" = "schedule" ]; then total=4; elif [ -n "$SHARDS_INPUT" ]; then total="$SHARDS_INPUT"; fi
+          if ! [[ "$total" =~ ^[1-8]$ ]]; then echo "::error::shards must be a whole number from 1 to 8"; exit 1; fi
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "shards=[$(seq -s, 1 "$total")]" >> "$GITHUB_OUTPUT"
+
   test:
-    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ github.event_name == 'schedule' && 'nightly full regression' || inputs.tags || '@smoke' }})
+    needs: plan
+    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ github.event_name == 'schedule' && 'nightly full regression' || inputs.tags || (needs.plan.outputs.total != '1' && 'full suite') || '@smoke' }})${{ needs.plan.outputs.total != '1' && format(' shard {0}/{1}', matrix.shard, needs.plan.outputs.total) || '' }}
     # A GitHub-hosted runner cannot reach http://localhost; that environment needs a runner on the Docker host.
     runs-on: ${{ (inputs.environment || 'REMOTE') == 'LOCALHOST' && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: ${{ github.event_name == 'schedule' && 120 || 30 }}
@@ -56,6 +78,7 @@ jobs:
       fail-fast: false
       matrix:
         project: [api, ui]
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
     defaults:
       run:
         # Explicit bash so the same scripts run on a Windows self-hosted runner (Git Bash).
@@ -65,9 +88,11 @@ jobs:
       # Inputs reach scripts through env, not ${{ }} interpolation, to avoid script injection.
       ENV: ${{ inputs.environment || 'REMOTE' }}
       GREP: ${{ inputs.tags || '@smoke' }}
+      TAGS_INPUT: ${{ inputs.tags }}
       # A scheduled run has no inputs: it runs every test instead of the @smoke subset.
       FULL_RUN: ${{ github.event_name == 'schedule' }}
-      SHARD: ${{ inputs.shard }}
+      SHARD: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ needs.plan.outputs.total }}
       WORKERS: ${{ inputs.workers }}
       RETRIES: ${{ inputs.retries || '0' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
@@ -123,11 +148,12 @@ jobs:
         run: npx playwright install --only-shell chromium
         timeout-minutes: 10
 
-      - name: Run tests (${{ github.event_name == 'schedule' && 'full regression' || env.GREP }})
+      - name: Run tests (${{ github.event_name == 'schedule' && 'full regression' || (needs.plan.outputs.total != '1' && inputs.tags == '' && 'full suite slice') || env.GREP }})
         run: |
           args=()
-          if [ "$FULL_RUN" != "true" ]; then args+=(--grep "$GREP"); fi
-          if [ -n "$SHARD" ]; then args+=(--shard "$SHARD"); fi
+          # The @smoke default must not apply to a sharded run, or the shards would split only the smoke tests.
+          if [ "$FULL_RUN" != "true" ] && { [ -n "$TAGS_INPUT" ] || [ "$SHARD_TOTAL" = "1" ]; }; then args+=(--grep "$GREP"); fi
+          if [ "$SHARD_TOTAL" != "1" ]; then args+=(--shard "$SHARD/$SHARD_TOTAL"); fi
           npx playwright test "${args[@]}" --pass-with-no-tests
 
       # Traces in these folders are already scrubbed by src/global-teardown.ts.
@@ -135,7 +161,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.project }}
+          name: playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}
           path: |
             automation/${{ matrix.project }}/playwright-report/
             automation/${{ matrix.project }}/test-results/
@@ -150,6 +176,6 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
         with:
-          name: allure-report-${{ matrix.project }}
+          name: allure-report-${{ matrix.project }}-shard-${{ matrix.shard }}
           path: automation/${{ matrix.project }}/allure-report/
           retention-days: 7
