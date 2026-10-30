@@ -22,7 +22,7 @@ The API and UI projects are independent npm packages. In each project directory,
 
 Run the API checks with `npm run test:api` and the UI checks with `npm run test:ui`, each from its corresponding project directory. Install the Playwright Chromium browser for UI checks with `npx playwright install chromium`. Run only the smoke set with `npx playwright test --grep @smoke`.
 
-Parallelism and retries are set per run with environment variables (also the CI build parameters): `WORKERS` (a number such as `4`, or a percentage such as `50%`; default UI `1`, API Playwright default locally and `1` on CI) and `RETRIES` (default `0`). An invalid value stops the run. For example, in PowerShell: `$env:WORKERS='4'; $env:RETRIES='1'; npm run test:api`.
+Parallelism and retries are set per run with environment variables (also the CI build parameters): `WORKERS` (a number such as `4`, or a percentage such as `50%`; default UI `1`, API Playwright default locally; CI sets `2` through the workflow) and `RETRIES` (default `0` locally; CI sets `2` through the workflow). An invalid value stops the run. For example, in PowerShell: `$env:WORKERS='4'; $env:RETRIES='1'; npm run test:api`.
 
 Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate`, then `npm run allure:open`, which serves it on `127.0.0.1`). `allurerc.mjs` builds a single self-contained `index.html`, so a downloaded CI artifact also opens directly from disk. The UI project takes a screenshot on failure (`screenshot: 'only-on-failure'`), and both reports include it with the redacted trace. API tests have no browser, so they produce no screenshots.
 
@@ -35,16 +35,17 @@ Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate
 | Pull request to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
 | Push (merge) to `main` that changes `automation/**` | `@smoke` | `REMOTE` |
 | Nightly schedule (`0 2 * * *` UTC, default branch) | Everything (no `--grep`), split over 4 shards, 120-minute timeout | `REMOTE` |
-| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (defaults to `@smoke`; `.` runs everything) | `environment` input |
+| Manual (*Actions > Playwright automation > Run workflow*) | `tags` input as a `--grep` filter (defaults to `@smoke`; `.` runs everything) | `REMOTE` |
+
+CI runs against `REMOTE` (`https://demo.inventree.org`) on GitHub-hosted runners only; `LOCALHOST` is for local runs, because a hosted runner cannot reach `http://localhost`.
 
 Build parameters (manual runs):
 
 | Parameter | Values |
 |---|---|
-| `environment` | `LOCALHOST` → `http://localhost` (runs on a `self-hosted` runner on the Docker host); `REMOTE` → `https://demo.inventree.org` (GitHub-hosted runner). Passed to the tests as `ENV`; the URL comes from `automation/shared/environments.ts` |
 | `tags` | Playwright `--grep` filter. Defaults to `@smoke`; use `.` to run everything. Cleared to empty, it runs `@smoke`, or the whole suite when `shards` is more than 1 |
-| `workers` | Parallel workers, passed as `WORKERS`: a number (`4`) or percentage (`50%`). Empty uses the project default (UI `1`, API `1` on CI) |
-| `retries` | Retries per failed test, passed as `RETRIES`, default `0`. Tests that pass only on retry are marked `flaky` in both reports |
+| `workers` | Parallel workers, passed as `WORKERS`: a number or percentage (`50%`). Default `2`. Going higher overloads the InvenTree demo site, which causes UI timeouts and API slowness |
+| `retries` | Retries per failed test, passed as `RETRIES`, default `2` in CI (the demo is slow and drops requests intermittently). Tests that pass only on retry are marked `flaky` in both reports |
 | `shards` | Number of parallel runners per project, 1 to 8 (empty or `1` runs everything in one job). A small `plan` job turns it into a matrix, and shard `N` of `total` runs Playwright `--shard N/total`. With `tags` set to `.` and `shards` above 1, the shards cover the whole suite; the default `@smoke` filter would leave only a handful of tests to split |
 
 **Scaling.** Pull requests stay fast with `@smoke`; the nightly run is the regression gate. When the suite outgrows one job, raise `shards`: the workflow fans out one job per project and shard (4 shards means 8 jobs), each with its own `playwright-report-<project>-shard-<n>` and `allure-report-<project>-shard-<n>` artifacts. Reports are per shard and are not merged. Every test owns its data, so shards do not share state. The remaining shared state is the target instance (its global settings and one superuser), so raising `WORKERS` is limited by that instance, not by the framework: the local Docker server drops requests under parallel UI load (see `automation/ui/README.md`).
