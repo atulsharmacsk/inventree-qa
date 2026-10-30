@@ -1,0 +1,69 @@
+# InvenTree UI Tests
+
+## Requirements
+
+- Node.js 20 or newer
+- An accessible InvenTree instance
+- Playwright Chromium browser
+
+## Setup and Run
+
+From this directory:
+
+```powershell
+npm ci
+npx playwright install chromium
+Copy-Item .env.example .env   # fill SUPERUSER_USERNAME and SUPERUSER_PASSWORD yourself
+npm run typecheck
+npm run test:ui
+npm run report
+```
+
+Set `ENV=LOCALHOST` (default, `http://localhost`) or `ENV=REMOTE` (`https://demo.inventree.org`); the URLs are mapped in `automation/shared/environments.ts`. Test results are written to `test-results/` and the HTML report to `playwright-report/`.
+
+## Authentication
+
+The `setup` project (`tests/auth.setup.ts`) logs in once through the login page and saves the session to `playwright/.auth/user.json`. The `ui` project depends on it and reuses that storage state, so specs never log in. The file holds the session cookie and is git-ignored (`automation/.gitignore`: `/ui/playwright/.auth/`). API setup and cleanup use a separate per-worker token that is revoked when the worker finishes.
+
+## Structure
+
+| Path | Purpose |
+|---|---|
+| `tests/auth.setup.ts` | One-time login; saves storage state |
+| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`), automatic cleanup reported as `cleanup` annotations |
+| `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`) |
+| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs) |
+| `src/components/` | `NavigationComponent` (header tabs), `PartFormComponent` (Add/Edit Part dialog, form error, submit with response) |
+| `../shared/` | Code shared with the API project: token handling, `PartService` and `CategoryService` (setup and cleanup), models, `uniqueName`, cleanup annotations, and the redaction patterns |
+| `src/models/`, `src/data/` | UI-only types (`PartFormInput`), routes, storage-state path, unique-name factories |
+| `src/global-teardown.ts` | Rewrites every `trace.zip` with the shared `hideSecrets` patterns (session and CSRF cookies, auth and CSRF headers, tokens, the password) before the HTML report copies it |
+
+## Selectors
+
+Role-based locators are used throughout. InvenTree exposes many controls only through generated aria-labels (for example `login-username`, `text-field-name`, `action-menu-add-parts`, `panel-tabs-part`); these are used where no visible label is associated, and each page object notes why.
+
+## Known Behaviors
+
+- Tests run with one worker. With two or more, the local Docker instance stops answering some requests (for example `/api/user/me/`) and the front-end falls back to the login page.
+- A "First Use Tour available" toast can cover the form's Submit button. Forms are submitted by keyboard so the tests do not start or dismiss the tour for the shared user.
+
+## Results (2026-10-29, local 1.6.3)
+
+| Case | Result |
+|---|---|
+| setup | Passed |
+| SMOKE-001, SMOKE-002 | Passed |
+| UI-CREATE-001, UI-CREATE-003, UI-CREATE-005 | Passed |
+| UI-CREATE-009, UI-CREATE-013, UI-IMPORT-007, UI-IMPORT-008 | Skipped (`fixme`, blocked) |
+
+## Traces and Screenshots
+
+Traces are kept for failed tests (`retain-on-failure`) and screenshots only on failure. Global teardown redacts traces first. After adding a new auth mechanism or secret, extend `hideSecrets` and rescan the trace archives.
+
+## Inspecting Pages
+
+`npm run snapshot -- <path> ["Click target" ...]` logs in with `.env` credentials (falling back to `../api/.env`) and prints the page's accessibility tree with the username redacted. Click targets match an accessible button name or visible text, for example:
+
+```powershell
+npm run snapshot -- /web/part/category/index/parts action-menu-add-parts
+```

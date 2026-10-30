@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "paginated-part-list.schema.json",
+  "title": "PaginatedPartList",
+  "description": "Generated from InvenTree API 561 OpenAPI schema (https://github.com/inventree/schema/tree/main/export/561), components.schemas.PaginatedPartList",
+  "type": "object",
+  "required": [
+    "count",
+    "results"
+  ],
+  "properties": {
+    "count": {
+      "type": "integer",
+      "example": 123
+    },
+    "next": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "example": "http://api.example.org/accounts/?offset=400&limit=100"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "previous": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "example": "http://api.example.org/accounts/?offset=200&limit=100"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "part.schema.json"
+      }
+    }
+  }
+}

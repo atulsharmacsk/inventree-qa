@@ -1,0 +1,18 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+/api/test-results/
+/api/playwright-report/
+/ui/test-results/
+/ui/playwright-report/
+/ui/playwright/.auth/
+
+# Local environment variables and credentials
+.env
+.env.*
+!.env.example

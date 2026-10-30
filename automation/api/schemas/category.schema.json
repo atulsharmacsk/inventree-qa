@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "category.schema.json",
+  "title": "Category",
+  "description": "InvenTree API 561 OpenAPI schema (https://github.com/inventree/schema/tree/main/export/561), components.schemas.Category. Reuses the copy already generated in part.schema.json.",
+  "allOf": [
+    {
+      "$ref": "part.schema.json#/$defs/Category"
+    }
+  ]
+}

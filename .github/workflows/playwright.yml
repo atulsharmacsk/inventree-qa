@@ -1,0 +1,115 @@
+name: Playwright automation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'automation/**'
+      - '.github/workflows/playwright.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'automation/**'
+      - '.github/workflows/playwright.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'ENV for the tests: REMOTE (demo server) or LOCALHOST (needs a self-hosted runner); URLs are mapped in automation/shared/environments.ts'
+        type: choice
+        options: [REMOTE, LOCALHOST]
+        default: REMOTE
+      tags:
+        description: 'Playwright --grep filter, for example @smoke, or "@smoke|API-CAT"'
+        type: string
+        default: '@smoke'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.project }} on ${{ inputs.environment || 'REMOTE' }} (${{ inputs.tags || '@smoke' }})
+    # A GitHub-hosted runner cannot reach http://localhost; that environment needs a runner on the Docker host.
+    runs-on: ${{ (inputs.environment || 'REMOTE') == 'LOCALHOST' && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'REMOTE' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [api, ui]
+    defaults:
+      run:
+        # Explicit bash so the same scripts run on a Windows self-hosted runner (Git Bash).
+        shell: bash
+        working-directory: automation/${{ matrix.project }}
+    env:
+      # Inputs reach scripts through env, not ${{ }} interpolation, to avoid script injection.
+      ENV: ${{ inputs.environment || 'REMOTE' }}
+      GREP: ${{ inputs.tags || '@smoke' }}
+      # Tests pick their role in code; a role without secrets in this environment is skipped.
+      SUPERUSER_USERNAME: ${{ secrets.SUPERUSER_USERNAME }}
+      SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
+      READER_USERNAME: ${{ secrets.READER_USERNAME }}
+      READER_PASSWORD: ${{ secrets.READER_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # actions/checkout@v6
+
+      - name: Check superuser secrets
+        run: |
+          echo "ENV: $ENV, grep: $GREP"
+          if [ -z "$SUPERUSER_USERNAME" ] || [ -z "$SUPERUSER_PASSWORD" ]; then
+            echo "::error::The $ENV environment needs SUPERUSER_USERNAME and SUPERUSER_PASSWORD secrets"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: automation/${{ matrix.project }}/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+        timeout-minutes: 5
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Cache Playwright browsers
+        if: matrix.project == 'ui' && runner.os == 'Linux'
+        id: cache-playwright-browsers
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-binaries-${{ hashFiles('automation/ui/package-lock.json') }}
+
+      - name: Install Playwright system dependencies
+        if: matrix.project == 'ui' && runner.os == 'Linux'
+        run: npx playwright install-deps chromium
+        timeout-minutes: 5
+
+      - name: Install browsers
+        if: matrix.project == 'ui' && steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --only-shell chromium
+        timeout-minutes: 10
+
+      - name: Run tests matching ${{ env.GREP }}
+        run: npx playwright test --grep "$GREP" --pass-with-no-tests
+
+      # Traces in these folders are already scrubbed by src/global-teardown.ts.
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: |
+            automation/${{ matrix.project }}/playwright-report/
+            automation/${{ matrix.project }}/test-results/
+          retention-days: 7

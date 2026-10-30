@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "paginated-category-list.schema.json",
+  "title": "PaginatedCategoryList",
+  "description": "Generated from InvenTree API 561 OpenAPI schema (https://github.com/inventree/schema/tree/main/export/561), components.schemas.PaginatedCategoryList",
+  "type": "object",
+  "required": [
+    "count",
+    "results"
+  ],
+  "properties": {
+    "count": {
+      "type": "integer"
+    },
+    "next": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "previous": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "category.schema.json"
+      }
+    }
+  }
+}

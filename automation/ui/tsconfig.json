@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    // shared/ has no node_modules; resolve its type-only package imports from this project.
+    "paths": {
+      "@playwright/test": [
+        "./node_modules/@playwright/test"
+      ]
+    }
+  },
+  "include": [
+    "playwright.config.ts",
+    "tests/**/*.ts",
+    "src/**/*.ts",
+    "../shared/**/*.ts"
+  ]
+}
