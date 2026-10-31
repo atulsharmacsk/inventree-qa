@@ -132,7 +132,7 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-007: Send a malformed JSON body
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, once the application rejects malformed JSON with a 4xx (application finding, OQ-EDGE-02); the test is `fixme` until then
+- **Automation candidate:** Yes. Runs as an expected failure (`test.fail`) while the application returns 500 (application finding, OQ-EDGE-02); turns red once it returns a 4xx
 - **Preconditions:** None.
 - **Request:** `POST /api/part/` with `Content-Type: application/json` and a body that is not valid JSON and contains a unique name token (for example `{"name": "<token>"`), then `GET /api/part/?search=<token>&limit=<n>`.
 - **Expected status:** 400 for the `POST` (observed 500 on local 1.6.3: application finding); 200 for the `GET`.
@@ -212,13 +212,13 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-012: Delete a locked part while locking is disabled
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes
+- **Automation candidate:** Yes (in the `settings` project: it switches `PART_ENABLE_LOCKING` off and restores it, LOCALHOST only)
 - **Preconditions:** Part locking (`PART_ENABLE_LOCKING`) is disabled; restore the original value afterwards. A test-owned inactive part (see OQ-PART-02) with `locked: true`.
 - **Request:** `DELETE /api/part/{id}/`, then `GET /api/part/?search=<name>&limit=<n>`.
 - **Expected status:** 204, then 200.
 - **Expected business result:** The part is deleted: the search returns `count` 0.
 - **Requirements:** REQ-EDGE-05
-- **Sources:** schema `DELETE /api/part/{id}/`; `docs:part/#locked-parts`
+- **Sources:** schema `DELETE /api/part/{id}/`; `docs:part/#locked-parts`; observed on local 1.6.3 and confirmed by user (2026-10-31)
 
 ### API-EDGE-013: Edit a locked part's fields
 - **Priority:** P2
@@ -234,19 +234,20 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-014: Create a part with an IPN that is already used
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes for the duplicates-allowed row; the duplicates-not-allowed row after OQ-CREATE-08
-- **Preconditions:** A test-owned part `A` with a unique IPN. The duplicate IPN setting (`PART_ALLOW_DUPLICATE_IPN`) is in the row's state; tests do not change global settings, so each row runs only on an instance already in that state.
-- **Request:** `POST /api/part/` with a different unique `name` and the same `IPN` as `A`, then `GET /api/part/?IPN=<IPN>&limit=<n>`.
+- **Automation candidate:** Yes. The duplicates-not-allowed rows run in the `settings` project, which switches `PART_ALLOW_DUPLICATE_IPN` off and restores it (LOCALHOST only)
+- **Preconditions:** A test-owned part `A` with a unique IPN. The duplicate IPN setting (`PART_ALLOW_DUPLICATE_IPN`) is in the row's state; the original value is restored afterwards.
+- **Request:** `POST /api/part/` with a different unique `name` and the row's `IPN`, then `GET /api/part/?IPN=<IPN>&limit=<n>`.
 
-  | `PART_ALLOW_DUPLICATE_IPN` | Expected |
-  |---|---|
-  | On (local 1.6.3) | 201; the IPN search lists both `A` and the new part |
-  | Off | See OQ-CREATE-08 (not yet observed) |
+  | `PART_ALLOW_DUPLICATE_IPN` | `IPN` sent | Expected |
+  |---|---|---|
+  | On (local 1.6.3 default) | Same as `A` | 201; the IPN search lists both `A` and the new part |
+  | Off | Same as `A` | 400 with an `IPN` key (local 1.6.3: `["Duplicate IPN not allowed in part settings"]`); only `A` has the IPN |
+  | Off | `A`'s IPN in lower case | 400, same error: the check ignores letter case |
 
 - **Expected status:** As in the table.
 - **Expected business result:** As in the table. `A` is unchanged in every row.
 - **Requirements:** REQ-EDGE-03
-- **Sources:** schema `POST /api/part/`, `GET /api/part/` `IPN` filter; OQ-CREATE-08 in [ui/part-creation.md](../ui/part-creation.md) (duplicates-allowed row confirmed by user on local 1.6.3, 2026-10-31)
+- **Sources:** schema `POST /api/part/`, `GET /api/part/` `IPN` filter; OQ-CREATE-08 in [ui/part-creation.md](../ui/part-creation.md) (all rows observed on local 1.6.3 and confirmed by user, 2026-10-31)
 
 ### API-EDGE-015: Create a category with a name already used under the same parent
 - **Priority:** P3

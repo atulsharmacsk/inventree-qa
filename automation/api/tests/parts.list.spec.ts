@@ -96,8 +96,11 @@ test.describe('Parts list', () => {
         expect(body.next).toBeNull();
       });
     });
-    // Application finding (OQ-LIST-02): without `limit` the server returns a bare array, not the documented paginated object.
-    test.fixme('API-LIST-004: request without limit (application finding: the response is an unpaginated array)', async ({ parts, categories }) => {
+    // Expected to fail until InvenTree returns the documented paginated list without `limit`; turns red once fixed.
+    test.fail(
+      'API-LIST-004: request without limit',
+      { annotation: { type: 'issue', description: 'Application finding OQ-LIST-02: without limit the server returns a bare array, not the documented paginated object' } },
+      async ({ parts, categories }) => {
       const category = await test.step('Setup: a category with one part', async () => {
         const category = await categories.createOrFail(newCategory());
         await parts.createOrFail(newPart({ category: category.pk }));
@@ -112,7 +115,8 @@ test.describe('Parts list', () => {
         expect(response.status()).toBe(200);
         checkPartList(await response.json());
       });
-    });
+      },
+    );
   });
 
   test.describe('Search', () => {
@@ -214,8 +218,11 @@ test.describe('Parts list', () => {
       }
     });
 
-    // Application finding (OQ-LIST-06): with the default cascade=true, category=null returns every part, not only uncategorized ones.
-    test.fixme('API-LIST-009: parts without a category (application finding: category=null returns all parts)', async ({ parts, categories }) => {
+    // Expected to fail until category=null returns only uncategorized parts with the default cascade; turns red once fixed.
+    test.fail(
+      'API-LIST-009: parts without a category',
+      { annotation: { type: 'issue', description: 'Application finding OQ-LIST-06: with the default cascade=true, category=null returns every part' } },
+      async ({ parts, categories }) => {
       const token = uniqueName('pw-list');
       const { uncategorized } = await test.step('Setup: a part with no category and a part in a category, sharing a name token', async () => {
         const category = await categories.createOrFail(newCategory());
@@ -231,7 +238,8 @@ test.describe('Parts list', () => {
       await test.step('Check only the part without a category is returned', async () => {
         await expectPartsListed(response, [uncategorized]);
       });
-    });
+      },
+    );
 
     test('API-LIST-010: exact and regular-expression text filters', async ({ parts, categories }) => {
       const token = uniqueName('pw-list');

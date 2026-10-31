@@ -38,6 +38,7 @@ This table describes the current layout. Check the files before adding a layer, 
 - API tests: reuse `authenticatedRequest`. It is wrapped by `src/http-logging.ts`, which attaches every request and response (method, URL, params, body, status) to the step that made it, with secrets hidden and auth headers omitted. For unauthenticated cases, add a fixture with a credential-free context instead of changing the existing one.
 - UI tests: use accessible locators (`getByRole`, `getByLabel`, `getByText`), then test IDs. Use CSS only with a comment explaining why. Use web-first assertions and condition-based waits; never use fixed sleeps.
 - Create uniquely named, test-owned data through factories, and clean up only that data. Tests must run independently and in parallel, with no state shared between them.
+- Only tests in `tests/*.settings.spec.ts` may change a global setting, and only through the `globalSetting` fixture, which restores the original value and fails the test if the restore fails. Those files run in the `settings` project, which runs after all other tests, and skip unless `ENV=LOCALHOST`, so the shared demo is never changed. Every other test reads settings as preconditions only.
 - Do not invent endpoints or expected status codes; verify them against the schema or the running instance.
 
 ## Code quality

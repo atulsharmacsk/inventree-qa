@@ -81,7 +81,7 @@ test.describe('Part creation', () => {
     });
   });
 
-  test.fixme('UI-CREATE-009: create a part with initial stock (blocked: Create Initial Stock setting is disabled on the local instance)', async () => {});
+  // UI-CREATE-009 is in part.settings.spec.ts, because it switches the Initial Stock Data setting on.
 
   test.fixme('UI-IMPORT-007: import with a category that does not exist (blocked by OQ-CREATE-05)', async () => {});
 

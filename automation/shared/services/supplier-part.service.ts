@@ -1,7 +1,6 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../../../shared/cleanup';
-import { DEFAULT_PAGE_LIMIT, type Page } from '../../../shared/models';
-import type { NewSupplierPart, SupplierPart, SupplierPartFilters } from '../models';
+import { deleteWithRetry } from '../cleanup';
+import { DEFAULT_PAGE_LIMIT, type NewSupplierPart, type Page, type SupplierPart, type SupplierPartFilters } from '../models';
 
 /** Sends requests to /api/company/part/ and removes the supplier parts of the parts a test registers. */
 export class SupplierPartService {

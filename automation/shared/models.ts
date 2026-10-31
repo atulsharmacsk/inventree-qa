@@ -180,6 +180,80 @@ export type BomItem = {
   quantity: number;
 };
 
+/** A company as returned by `/api/company/`. */
+export type Company = {
+  pk: number;
+  name: string;
+  is_supplier: boolean;
+  is_manufacturer: boolean;
+};
+
+/** Fields sent when creating a company; `name` and `currency` are required by the schema. */
+export type NewCompany = {
+  name: string;
+  currency: string;
+  is_supplier?: boolean;
+  is_manufacturer?: boolean;
+  is_customer?: boolean;
+};
+
+/** A supplier part as returned by `/api/company/part/`. */
+export type SupplierPart = {
+  pk: number;
+  part: number;
+  supplier: number;
+  SKU: string;
+  manufacturer_part: number | null;
+};
+
+export type NewSupplierPart = {
+  part: number;
+  supplier: number;
+  SKU: string;
+  manufacturer_part?: number;
+};
+
+/** Query filters for `GET /api/company/part/` used by the tests. */
+export type SupplierPartFilters = {
+  part?: number;
+  supplier?: number;
+  SKU?: string;
+};
+
+/** Purchase orders (`po`) and sales orders (`so`) under `/api/order/`. */
+export type OrderKind = 'po' | 'so';
+
+/** A purchase or sales order as returned by `/api/order/po/` or `/api/order/so/`. */
+export type Order = {
+  pk: number;
+  reference: string;
+};
+
+/** Fields sent when creating an order: a supplier for a purchase order, a customer for a sales order. */
+export type NewOrder = { supplier: number } | { customer: number };
+
+/** A line item as returned by `/api/order/po-line/` or `/api/order/so-line/`; `part` is a supplier part for purchase orders. */
+export type OrderLine = {
+  pk: number;
+  order: number;
+  part: number;
+  quantity: number;
+};
+
+export type NewOrderLine = {
+  order: number;
+  /** A supplier part ID for a purchase order line, a part ID for a sales order line. */
+  part: number;
+  quantity: number;
+};
+
+/** Fields sent when creating a BOM line: `part` is the assembly, `sub_part` the component. */
+export type NewBomItem = {
+  part: number;
+  sub_part: number;
+  quantity: number;
+};
+
 /** A parameter template as returned by `/api/parameter/template/`. */
 export type ParameterTemplate = {
   pk: number;

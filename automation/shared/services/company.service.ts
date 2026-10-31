@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../../../shared/cleanup';
+import { deleteWithRetry } from '../cleanup';
 import type { Company, NewCompany } from '../models';
 
 /** Sends requests to /api/company/ and remembers the companies a test creates. */

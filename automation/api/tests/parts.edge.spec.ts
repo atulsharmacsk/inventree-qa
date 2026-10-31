@@ -74,7 +74,23 @@ test.describe('Edge cases', () => {
   });
 
   test.describe('Invalid payloads', () => {
-    test.fixme('API-EDGE-007: send a malformed JSON body (application finding: the server returns 500 instead of 400, OQ-EDGE-02)', async () => {});
+    // Expected to fail until InvenTree rejects malformed JSON with 400 instead of 500; turns red once fixed.
+    test.fail(
+      'API-EDGE-007: send a malformed JSON body',
+      { annotation: { type: 'issue', description: 'Application finding OQ-EDGE-02: malformed JSON returns 500 (AttributeError) instead of 400' } },
+      async ({ parts }) => {
+        const token = uniqueName('pw-edge');
+
+        const response = await test.step('POST /api/part/ with Content-Type application/json and a truncated JSON body', async () => {
+          return await parts.createRawJson(`{"name": "${token}"`);
+        });
+
+        await test.step('Check the request returns 400 and no part was created', async () => {
+          expect(response.status()).toBe(400);
+          await expectPartsListed(await parts.listFiltered({ search: token }), []);
+        });
+      },
+    );
 
     const WRONG_TYPES = [
       { field: 'assembly', value: 'not-a-boolean' },
@@ -189,22 +205,7 @@ test.describe('Edge cases', () => {
       });
     }
 
-    // Skipped, not deleted: the body is ready to run once an instance has part locking (PART_ENABLE_LOCKING) disabled.
-    // Tests never change global settings, and locking is enabled on the local instance.
-    test.fixme('API-EDGE-012: delete a locked part while locking is disabled (blocked: PART_ENABLE_LOCKING is enabled on the local instance)', async ({ parts }) => {
-      const part = await test.step('Setup: POST /api/part/ with locked=true and active=false', async () => {
-        return await parts.createOrFail(newPart({ locked: true, active: false }));
-      });
-
-      const response = await test.step('DELETE /api/part/{id}/', async () => {
-        return await parts.delete(part.pk);
-      });
-
-      await test.step('Check DELETE returns 204 and the part is no longer listed', async () => {
-        expect(response.status()).toBe(204);
-        await expectPartsListed(await parts.listFiltered({ search: part.name }), []);
-      });
-    });
+    // API-EDGE-012 (locking disabled) is in parts.settings.spec.ts, because it switches PART_ENABLE_LOCKING off.
 
     // OQ-EDGE-05 (confirmed by the user): locking blocks delete, BOM, and parameters, not field edits; the schema text is a documentation defect.
     test('API-EDGE-013: edit a locked part\'s fields', async ({ parts }) => {
@@ -242,7 +243,7 @@ test.describe('Edge cases', () => {
       });
     });
 
-    test.fixme('API-EDGE-014: create a part with an IPN that is already used, duplicates not allowed (blocked by OQ-CREATE-08; PART_ALLOW_DUPLICATE_IPN is on locally)', async () => {});
+    // The duplicates-not-allowed rows of API-EDGE-014 are in parts.settings.spec.ts, because they switch the setting off.
     // OQ-EDGE-06 (confirmed by the user): names are unique per parent, compared case-sensitively.
     const DUPLICATE_NAME_ROWS = [
       { label: 'the same name under the same parent', underParent: true, upperCase: false, accepted: false },

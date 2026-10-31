@@ -78,6 +78,13 @@ export class PartDetailPage {
     return form;
   }
 
+  /** Opens the Stock tab, waits for its table, and reports whether Add Stock Item is shown and enabled. */
+  async canAddStockItem(): Promise<boolean> {
+    await this.openTab('Stock');
+    await this.waitForTable('Stock');
+    return (await this.addStockItemButton.isVisible()) && (await this.addStockItemButton.isEnabled());
+  }
+
   /** BOM tab > Edit BOM > Add BOM Items > Add BOM Item. */
   async openAddBomItemForm(): Promise<BomItemFormComponent> {
     await this.openTab('Bill of Materials');

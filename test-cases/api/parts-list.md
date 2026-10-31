@@ -88,7 +88,7 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-004: Request without limit
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, once the application returns the documented paginated list without `limit` (application finding, OQ-LIST-02); the test is `fixme` until then
+- **Automation candidate:** Yes. Runs as an expected failure (`test.fail`) while the application returns a bare array (application finding, OQ-LIST-02); turns red once it returns the paginated list
 - **Preconditions:** As API-LIST-001.
 - **Request:** `GET /api/part/?category=<id>`
 - **Expected status:** 200.
@@ -161,7 +161,7 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-009: Parts without a category
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes, once `category=null` returns only uncategorized parts (application finding, OQ-LIST-06); the test is `fixme` until then
+- **Automation candidate:** Yes. Runs as an expected failure (`test.fail`) while `category=null` returns all parts (application finding, OQ-LIST-06); turns red once only uncategorized parts are returned
 - **Preconditions:** Two test-owned parts whose names share a unique token: `U` with no category, and `K` in a test-owned category.
 - **Request:** `GET /api/part/?category=null&search=<token>&limit=<n>`
 - **Expected status:** 200
