@@ -29,6 +29,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Open the part > Stock tab', async () => {
         await partDetail.goto(part.pk);
         await partDetail.openTab('Stock');
+        await partDetail.waitForTable('Stock');
       });
 
       for (const { location, quantity } of stock) {
@@ -71,6 +72,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Open the part > Stock tab', async () => {
         await partDetail.goto(part.pk);
         await partDetail.openTab('Stock');
+        await partDetail.waitForTable('Stock');
       });
 
       await test.step('Check the item is listed in the Stock tab with the entered quantity and location', async () => {
@@ -96,6 +98,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Open the template > Stock tab', async () => {
         await partDetail.goto(template.pk);
         await partDetail.openTab('Stock');
+        await partDetail.waitForTable('Stock');
       });
 
       for (const { part, quantity } of variants) {
@@ -130,6 +133,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Check the component is listed in the BOM with the entered quantity', async () => {
         expect(response.status()).toBe(201);
         await expect(form.dialog).toBeHidden();
+        await partDetail.waitForTable('Bill of Materials');
         const row = partDetail.tableRows('Bill of Materials', component.name);
         await expect(row).toHaveCount(1);
         await expect(row.getByRole('cell', { name: String(quantity), exact: true })).toBeVisible();
@@ -163,6 +167,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Check the parameter is listed in the Parameters tab with the entered value', async () => {
         expect(response.status()).toBe(201);
         await expect(form.dialog).toBeHidden();
+        await partDetail.waitForTable('Parameters');
         const row = partDetail.tableRows('Parameters', template.name);
         await expect(row).toHaveCount(1);
         await expect(row).toContainText(value);
@@ -202,6 +207,7 @@ test.describe('Part detail view tabs', () => {
       await test.step('Open the template > Variants tab and check the variant is listed', async () => {
         await partDetail.goto(template.pk);
         await partDetail.openTab('Variants');
+        await partDetail.waitForTable('Variants');
         await expect(partDetail.tableRows('Variants', variant.name)).toHaveCount(1);
       });
     });

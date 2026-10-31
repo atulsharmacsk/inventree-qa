@@ -48,6 +48,8 @@ export type Part = {
   thumbnail: string;
   locked: boolean;
   variant_of: number | null;
+  /** `YYYY-MM-DD`, set by the server. */
+  creation_date: string;
 } & Record<PartFlag, boolean>;
 
 /** Fields sent when creating a part. Only `name` is required. */
@@ -62,6 +64,8 @@ export type NewPart = {
   default_location?: number | null;
   /** Write-only: creates a supplier part for the new part. */
   initial_supplier?: { supplier: number; sku: string };
+  /** Write-only: creates a stock item; applied by the API even when the Initial Stock Data setting is off (OQ-PART-03). */
+  initial_stock?: { quantity: number; location: number };
   minimum_stock?: number;
   maximum_stock?: number;
   variant_of?: number;
@@ -96,6 +100,11 @@ export type PartFilters = Partial<Record<PartFlag, boolean>> & {
   low_stock?: boolean;
   /** Comma-separated part IDs. */
   exclude_id?: string;
+  /** A field name, `-` prefixed for descending (for example `-name`). */
+  ordering?: string;
+  /** `YYYY-MM-DD`; exclusive, compared with `creation_date` (OQ-LIST-04). */
+  created_after?: string;
+  created_before?: string;
 };
 
 /** A part category as returned by the API. */
@@ -118,6 +127,8 @@ export type NewCategory = {
   default_keywords?: string;
   parent?: number | null;
   structural?: boolean;
+  /** Stock location ID. */
+  default_location?: number | null;
 };
 
 /** Query filters for `GET /api/part/category/` used by the tests. */

@@ -1,6 +1,6 @@
 import { checkCategoryList, checkCategoryShape, checkCategoryTreeList } from '../src/checks';
-import type { Category, CategoryTreeItem, Page } from '../../shared/models';
-import { newCategory } from '../src/test-data';
+import type { Category, CategoryTreeItem, Page, Part } from '../../shared/models';
+import { newCategory, newPart } from '../src/test-data';
 import { expect, test } from './fixtures';
 
 // Manual cases: test-cases/api/categories-crud.md
@@ -234,8 +234,30 @@ test.describe('Part Categories CRUD', () => {
       });
     });
 
-    test.fixme('API-CAT-013: reject a category as its own parent (blocked by OQ-ACAT-02)', async () => {});
-    test.fixme('API-CAT-013: reject a category under its own child (blocked by OQ-ACAT-02)', async () => {});
+    // OQ-ACAT-02: the server rejects a circular parent with 400 and a `parent` field error.
+    const circularParents = [
+      { intent: 'as its own parent', newParent: (self: Category) => self.pk },
+      { intent: 'under its own child', newParent: (_self: Category, child: Category) => child.pk },
+    ];
+    for (const { intent, newParent } of circularParents) {
+      test(`API-CAT-013: reject a category ${intent}`, async ({ categories }) => {
+        const { category, child } = await test.step('Setup: category A, and B under A', async () => {
+          const category = await categories.createOrFail(newCategory());
+          const child = await categories.createOrFail(newCategory({ parent: category.pk }));
+          return { category, child };
+        });
+
+        const response = await test.step(`PATCH /api/part/category/{A}/ with A ${intent}`, async () => {
+          return await categories.update(category.pk, { parent: newParent(category, child) });
+        });
+
+        await test.step('Check 400 with a parent error, and A keeps no parent', async () => {
+          expect(response.status()).toBe(400);
+          expect(await response.json()).toHaveProperty('parent');
+          expect((await categories.getOrFail(category.pk)).parent).toBeNull();
+        });
+      });
+    }
   });
 
   test.describe('Delete', () => {
@@ -270,7 +292,61 @@ test.describe('Part Categories CRUD', () => {
       });
     });
 
-    test.fixme('API-CAT-015: delete a category that has a sub-category and a part (blocked by OQ-ACAT-06)', async () => {});
+    // OQ-ACAT-06 (confirmed by the user): kept records move up to the deleted category's parent `G`.
+    const DELETE_FLAG_ROWS = [
+      { delete_parts: false, delete_child_categories: false, child: 'moved', partInT: 'moved', partInChild: 'stays' },
+      { delete_parts: false, delete_child_categories: true, child: 'deleted', partInT: 'moved', partInChild: 'moved' },
+      { delete_parts: true, delete_child_categories: false, child: 'moved', partInT: 'deleted', partInChild: 'stays' },
+      { delete_parts: true, delete_child_categories: true, child: 'deleted', partInT: 'deleted', partInChild: 'deleted' },
+    ] as const;
+
+    for (const row of DELETE_FLAG_ROWS) {
+      const flags = { delete_parts: row.delete_parts, delete_child_categories: row.delete_child_categories };
+
+      test(`API-CAT-015: delete a category with delete_parts=${row.delete_parts} and delete_child_categories=${row.delete_child_categories}`, async ({ categories, parts }) => {
+        const { grandparent, target, child, partInT, partInChild } = await test.step('Setup: G, T under G, C under T, part X in T, part Y in C', async () => {
+          const grandparent = await categories.createOrFail(newCategory());
+          const target = await categories.createOrFail(newCategory({ parent: grandparent.pk }));
+          const child = await categories.createOrFail(newCategory({ parent: target.pk }));
+          const partInT = await parts.createOrFail(newPart({ category: target.pk }));
+          const partInChild = await parts.createOrFail(newPart({ category: child.pk }));
+          return { grandparent, target, child, partInT, partInChild };
+        });
+
+        const response = await test.step(`DELETE /api/part/category/{T}/ with ${JSON.stringify(flags)}`, async () => {
+          return await categories.delete(target.pk, flags);
+        });
+
+        await test.step('Check 204 and T is gone', async () => {
+          expect(response.status()).toBe(204);
+          expect((await categories.get(target.pk)).status()).toBe(404);
+        });
+
+        await test.step(`Check sub-category C is ${row.child}`, async () => {
+          const read = await categories.get(child.pk);
+          if (row.child === 'deleted') {
+            expect(read.status()).toBe(404);
+          } else {
+            expect(read.status()).toBe(200);
+            expect(((await read.json()) as Category).parent).toBe(grandparent.pk);
+          }
+        });
+
+        const expectedCategory = { moved: grandparent.pk, stays: child.pk } as const;
+        for (const [label, part, outcome] of [['X (in T)', partInT, row.partInT], ['Y (in C)', partInChild, row.partInChild]] as const) {
+          await test.step(`Check part ${label} is ${outcome}`, async () => {
+            const read = await parts.get(part.pk);
+            if (outcome === 'deleted') {
+              expect(read.status()).toBe(404);
+            } else {
+              expect(read.status()).toBe(200);
+              expect(((await read.json()) as Part).category).toBe(expectedCategory[outcome]);
+            }
+          });
+        }
+      });
+    }
+
     test('API-CAT-016: operations on a category that does not exist', async ({ categories }) => {
       const missingId = await test.step('Setup: create and delete a category to get an ID that no longer exists', async () => {
         const category = await categories.createOrFail(newCategory());

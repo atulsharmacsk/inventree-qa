@@ -80,7 +80,7 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 ### API-VAL-003: Empty or whitespace-only `name`
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-VAL-03
+- **Automation candidate:** Yes
 - **Preconditions:** None.
 - **Request:** One request per row, each with a unique `description` token, then search for the token on the matching list endpoint.
 
@@ -91,10 +91,10 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
   | `POST /api/part/category/` | `""` |
   | `POST /api/part/category/` | `"   "` |
 
-- **Expected status:** See OQ-VAL-03.
-- **Expected business result:** See OQ-VAL-03.
+- **Expected status:** 400 for each row.
+- **Expected business result:** The error body has a `name` key (local 1.6.3 returns `{"name": ["This field may not be blank."]}`), and searching for the token finds no record.
 - **Requirements:** REQ-VAL-01, REQ-VAL-02
-- **Sources:** schema Part and Category `name` (no `minLength` given)
+- **Sources:** schema Part and Category `name` (no `minLength` given); `docs:part/create/` (*Name* is required); OQ-VAL-03 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-VAL-004: Full update without `name`
 - **Priority:** P2
@@ -169,24 +169,33 @@ Also checked: the root `README.md` (OQ-PART-06 and OQ-PART-07 schema documentati
 - **Requirements:** REQ-VAL-03
 - **Sources:** schema `PATCH /api/part/{id}/`, Part `name` maxLength
 
-### API-VAL-008: Category text fields at their maximum length
+### API-VAL-008: Category text fields at their maximum length, and icon format
 - **Priority:** P2
 - **Type:** Boundary (data-driven)
-- **Automation candidate:** Yes, after OQ-VAL-04 (icon row only; the other rows are ready)
+- **Automation candidate:** Yes
 - **Preconditions:** None.
-- **Request:** `POST /api/part/category/` with a unique `name`, plus one field per row at exactly the given length; then `GET /api/part/category/{id}/`.
+- **Request (lengths):** `POST /api/part/category/` with a unique `name`, plus one field per row at exactly the given length; then `GET /api/part/category/{id}/`.
 
   | Field | Length |
   |---|---|
   | `name` | 100 |
   | `description` | 250 |
   | `default_keywords` | 250 |
-  | `icon` | 100 (see OQ-VAL-04) |
 
-- **Expected status:** 201, then 200.
-- **Expected business result:** The field is stored and returned exactly as sent.
+- **Request (icon format):** `POST /api/part/category/` with a unique `name` and one `icon` per row. `icon` is not tested at its 100-character maximum: a valid icon must name a real icon (OQ-VAL-04), and none is that long. API-VAL-009 covers the over-length case.
+
+  | `icon` | Expected |
+  |---|---|
+  | `ti:box:outline` | 201, stored as sent |
+  | `ti:box:filled` (variant the pack does not have) | 400 |
+  | `ti:nonexistent-icon:outline` (unknown icon name) | 400 |
+  | `box` (no pack or variant) | 400 |
+  | `ti:box` (no variant) | 400 |
+
+- **Expected status:** Lengths: 201, then 200. Icon format: as in the table.
+- **Expected business result:** Lengths: the field is stored and returned exactly as sent. Icon format: a 400 body has an `_icon` key (local 1.6.3, for example `{"_icon": ["Invalid icon variant: filled"]}`), and no category is created.
 - **Requirements:** REQ-VAL-04
-- **Sources:** schema Category `maxLength`; `docs:part/#part-category`
+- **Sources:** schema Category `maxLength`; `docs:part/#part-category`; OQ-VAL-04 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-VAL-009: Category text fields one character over the maximum
 - **Priority:** P2
@@ -410,6 +419,6 @@ All 11 requirements (REQ-VAL-01 to REQ-VAL-11) are covered by at least one case.
 |---|---|---|---|
 | OQ-VAL-01 | Which status and error body are returned when a field fails validation (missing required field, over maximum length, `null` on a non-nullable field, invalid URI, value below `minimum`)? The schema documents only success responses. Same gap as OQ-EDGE-02. | API-VAL-001, 002, 004, 006, 007, 009, 010, 013, 015, 020, 021 | Resolved: 400 with a field-keyed body (for example `{"name": ["This field is required."]}`). Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-VAL-02 | Are read-only fields in a request body ignored (2xx, values not stored) or rejected? The schema marks them `readOnly` but does not say. | API-VAL-016, 017, 018 | Resolved: intended behaviour. Read-only fields in a request body are ignored: the request succeeds (201 or 200) and the submitted values are not stored. Local 1.6.3, confirmed by user (2026-10-30). |
-| OQ-VAL-03 | Is an empty or whitespace-only `name` accepted for parts and categories? The schema gives `maxLength` but no `minLength`; `docs:part/create/` says *Name* is required. | API-VAL-003 | Open |
-| OQ-VAL-04 | What makes a category `icon` value valid? The schema says only "Icon (optional)", maxLength 100. A 100-character arbitrary string may fail for content, not length. | API-VAL-008 | Open |
+| OQ-VAL-03 | Is an empty or whitespace-only `name` accepted for parts and categories? The schema gives `maxLength` but no `minLength`; `docs:part/create/` says *Name* is required. | API-VAL-003 | Resolved: 400 `{"name": ["This field may not be blank."]}` for an empty or whitespace-only name on both endpoints; nothing is created. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-VAL-04 | What makes a category `icon` value valid? The schema says only "Icon (optional)", maxLength 100. A 100-character arbitrary string may fail for content, not length. | API-VAL-008 | Resolved: `icon` must be `pack:name:variant` naming a real icon from an installed pack (for example `ti:box:outline`); otherwise 400 with an `_icon` key (wrong variant, unknown name, or wrong format). A valid 100-character icon cannot be built, so the maximum-length row is replaced by format rows. Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-VAL-05 | When a nullable text field is set to `null`, is it returned as `null` or as `""`? Both match the schema. | API-VAL-012, 014 | Resolved: intended behaviour. A nullable field set to `null` returns `null`, except a category `icon`, which returns `""`. Local 1.6.3, confirmed by user (2026-10-30). |

@@ -120,6 +120,12 @@ export class PartDetailPage {
     return this.tabPanel(tab).getByRole('row').filter({ hasText: text });
   }
 
+  /** Waits until the tab's table has finished fetching, so row checks do not run against the loading state. */
+  async waitForTable(tab: PartTab): Promise<void> {
+    // The Mantine DataTable spinner has no role or label; this class is present only while a fetch is running.
+    await this.tabPanel(tab).locator('.mantine-datatable-loader-fetching').waitFor({ state: 'hidden' });
+  }
+
   /** The page title paragraph, for example "Part: Widget". */
   title(partName: string): Locator {
     return this.page.getByText(`Part: ${partName}`, { exact: true });

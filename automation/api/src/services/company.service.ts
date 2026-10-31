@@ -17,6 +17,10 @@ export class CompanyService {
     return response;
   }
 
+  get(id: number): Promise<APIResponse> {
+    return this.request.get(`/api/company/${id}/`);
+  }
+
   delete(id: number): Promise<APIResponse> {
     return this.request.delete(`/api/company/${id}/`);
   }

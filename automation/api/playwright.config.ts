@@ -9,6 +9,8 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 export default defineConfig({
   testDir: './tests',
+  // The shared demo answers single requests in 4-8 s, and setup plus cleanup count toward the test timeout.
+  timeout: 60_000,
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

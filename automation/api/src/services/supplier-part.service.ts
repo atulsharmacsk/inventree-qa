@@ -9,15 +9,20 @@ export class SupplierPartService {
 
   constructor(private request: APIRequestContext) {}
 
-  /** Creates a supplier part and registers its part, so supplier parts added another way are also removed. */
+  /** Creates a supplier part and, if that succeeds, registers its part, so supplier parts added another way are also removed. */
   async create(supplierPart: NewSupplierPart): Promise<APIResponse> {
-    this.trackPart(supplierPart.part);
-    return this.request.post('/api/company/part/', { data: supplierPart });
+    const response = await this.request.post('/api/company/part/', { data: supplierPart });
+    if (response.status() === 201) this.trackPart(supplierPart.part);
+    return response;
   }
 
   // The schema marks `limit` as required on list endpoints.
   list(filters: SupplierPartFilters = {}, limit = DEFAULT_PAGE_LIMIT): Promise<APIResponse> {
     return this.request.get('/api/company/part/', { params: { ...filters, limit } });
+  }
+
+  get(id: number): Promise<APIResponse> {
+    return this.request.get(`/api/company/part/${id}/`);
   }
 
   delete(id: number): Promise<APIResponse> {
@@ -53,6 +58,8 @@ export class SupplierPartService {
     for (const part of this.partIds) {
       const response = await this.list({ part });
       if (response.status() !== 200) {
+        // `?part=` returns 400 for a deleted part; its supplier parts were deleted with it (OQ-REL-05).
+        if ((await this.request.get(`/api/part/${part}/`)).status() === 404) continue;
         failures.push(`Listing supplier parts of part ${part} returned ${response.status()}`);
         continue;
       }

@@ -77,13 +77,13 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-003: Offset beyond the last record
 - **Priority:** P3
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-LIST-01
+- **Automation candidate:** Yes
 - **Preconditions:** As API-LIST-001.
 - **Request:** `GET /api/part/?category=<id>&limit=2&offset=10`
-- **Expected status:** See OQ-LIST-01.
-- **Expected business result:** See OQ-LIST-01.
+- **Expected status:** 200.
+- **Expected business result:** `results` is empty, `count` is 3, and `next` is null.
 - **Requirements:** REQ-LIST-01
-- **Sources:** schema `GET /api/part/`
+- **Sources:** schema `GET /api/part/`; OQ-LIST-01 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-LIST-004: Request without limit
 - **Priority:** P2
@@ -229,26 +229,34 @@ Query parameters used in this area, from the schema (not exhaustive):
 ### API-LIST-014: Filter by creation date
 - **Priority:** P3
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-LIST-04
-- **Preconditions:** A test-owned category with one part created today.
-- **Request:** `GET /api/part/?category=<id>&created_after=<yesterday>&limit=<n>` and `...&created_before=<yesterday>&limit=<n>`.
-- **Expected status:** 200 for both.
-- **Expected business result:** See OQ-LIST-04.
+- **Automation candidate:** Yes
+- **Preconditions:** A test-owned category with one part; `D` is that part's `creation_date`.
+- **Request:** `GET /api/part/?category=<id>&limit=<n>` with each filter below.
+
+  | Filter | Part returned |
+  |---|---|
+  | `created_after=<D - 1 day>` | Yes |
+  | `created_after=<D>` | No (exclusive) |
+  | `created_before=<D + 1 day>` | Yes |
+  | `created_before=<D>` | No (exclusive) |
+
+- **Expected status:** 200 for each.
+- **Expected business result:** As in the table. Dates use `YYYY-MM-DD` and are compared with `creation_date`.
 - **Requirements:** REQ-LIST-09
-- **Sources:** schema `GET /api/part/` `created_after`, `created_before`
+- **Sources:** schema `GET /api/part/` `created_after`, `created_before` (`format: date`); OQ-LIST-04 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Ordering and Combination
 
 ### API-LIST-015: Order by name
 - **Priority:** P2
 - **Type:** Positive
-- **Automation candidate:** Yes, after OQ-LIST-03
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category with parts named `<token>-b`, `<token>-a`, and `<token>-c`, created in that order.
 - **Request:** `GET /api/part/?category=<id>&ordering=name&limit=<n>` and `...&ordering=-name&limit=<n>`.
-- **Expected status:** See OQ-LIST-03.
-- **Expected business result:** See OQ-LIST-03.
+- **Expected status:** 200 for both.
+- **Expected business result:** `ordering=name` returns `a`, `b`, `c`; `ordering=-name` returns `c`, `b`, `a`.
 - **Requirements:** REQ-LIST-08
-- **Sources:** schema `GET /api/part/` `ordering`
+- **Sources:** schema `GET /api/part/` `ordering`; OQ-LIST-03 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-LIST-016: Combined filters must all match
 - **Priority:** P2
@@ -283,9 +291,9 @@ All 9 requirements are covered by at least one case. Search fields not covered b
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-LIST-01 | What does an `offset` beyond the last record return: 200 with empty `results`, or an error? The schema does not say. | API-LIST-003 | Open |
+| OQ-LIST-01 | What does an `offset` beyond the last record return: 200 with empty `results`, or an error? The schema does not say. | API-LIST-003 | Resolved: 200 with empty `results`, unchanged `count`, and `next` null. Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-LIST-02 | What is returned when `limit` is omitted? The local OpenAPI schema marks `limit` as required; an earlier local run without it returned an unpaginated array (README correction log, API-PART-007). Not yet confirmed by the user as intended behaviour. | API-LIST-004 | Resolved as an application finding, confirmed by the user (2026-10-30): without `limit` the server returns a bare array instead of the documented paginated list, although the schema marks `limit` required. Local 1.6.3. |
-| OQ-LIST-03 | Which fields does `ordering` accept, and is `name` one of them? The schema gives no list. | API-LIST-015 | Open |
-| OQ-LIST-04 | Do `created_after` and `created_before` filter on the creation date or the update date? The schema names them "created" but describes them as "Updated after" and "Updated before"; the date format is not stated. | API-LIST-014 | Open |
+| OQ-LIST-03 | Which fields does `ordering` accept, and is `name` one of them? The schema gives no list. | API-LIST-015 | Resolved for `name`: `ordering=name` sorts ascending and `-name` descending. An unknown field (for example `ordering=unknownfield`) is ignored: 200 in the default order, not an error. The full list of accepted fields is still undocumented. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-LIST-04 | Do `created_after` and `created_before` filter on the creation date or the update date? The schema names them "created" but describes them as "Updated after" and "Updated before"; the date format is not stated. | API-LIST-014 | Resolved: both filters take `YYYY-MM-DD`, compare with `creation_date`, and are exclusive (a part created on the given day is excluded by both); an invalid date returns 400. The schema descriptions "Updated after" / "Updated before" are recorded as a schema documentation defect. Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-LIST-05 | Is a part with no stock at all (total 0, below its minimum) included by `low_stock=true`, or only by `depleted_stock`? Neither filter is defined in the schema. | API-LIST-012 | Open |
 | OQ-LIST-06 | Should `category=null` return only parts without a category? The schema describes `category` as "Filter by numeric category ID or the literal 'null'" and does not mention `cascade`. On local 1.6.3 the request returned parts that have a category as well as parts without one. In the local source (`part/api.py`, `filter_category`), `null` filters to uncategorized parts only when `cascade=false`; `cascade` defaults to true, and then the whole list is returned. Documented expectation: only uncategorized parts. Not yet confirmed by the user as intended behaviour. | API-LIST-009 | Resolved as an application finding, confirmed by the user (2026-10-30): with the default `cascade=true`, `category=null` returns every part, not only uncategorized ones. Local 1.6.3. |

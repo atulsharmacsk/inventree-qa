@@ -243,11 +243,11 @@ None of these pages describes duplicate IPN handling. The local source (`common/
 
   | Duplicate IPN setting | Expected result |
   |---|---|
-  | Duplicates allowed | See OQ-CREATE-08 |
-  | Duplicates not allowed | See OQ-CREATE-08 |
-- **Expected result:** See OQ-CREATE-08 for each row. In every row, part `A` is unchanged.
+  | Duplicates allowed (`PART_ALLOW_DUPLICATE_IPN` on, as on the local instance) | The part is created; searching for the IPN lists both `A` and the new part |
+  | Duplicates not allowed | See OQ-CREATE-08 (not yet observed) |
+- **Expected result:** As in the table. In every row, part `A` is unchanged.
 - **Requirements:** REQ-CR-07, REQ-CR-03
-- **Source:** `docs:part/views/#part-details` (IPN field); behavior: OQ-CREATE-08
+- **Source:** `docs:part/views/#part-details` (IPN field); behavior: OQ-CREATE-08 (duplicates-allowed row confirmed by user on local 1.6.3, 2026-10-31)
 - **Note:** Required negative scenario (duplicate IPN). The API counterpart is API-EDGE-014 in [edge-cases.md](../api/edge-cases.md).
 
 ## Import from File
@@ -428,5 +428,5 @@ All 21 requirements are covered by at least one case.
 | OQ-CREATE-05 | How is an unmatched category reported during import (row error or failed mapping)? | UI-IMPORT-007 | Open |
 | OQ-CREATE-06 | How is a non-staff user prevented from importing (menu hidden, or an error on submit)? | UI-IMPORT-008 | Open |
 | OQ-CREATE-07 | Is a supplier plugin available for the local instance? Without one, UI-IMPORT-012 and UI-IMPORT-013 cannot be run. | UI-IMPORT-012, UI-IMPORT-013 | Open |
-| OQ-CREATE-08 | How are duplicate IPNs handled at creation, with duplicates allowed and not allowed? Is a rejection shown as a form error? The pages read do not describe this behavior or its controlling setting. The local source defines *Allow Duplicate IPN* (`PART_ALLOW_DUPLICATE_IPN`, default enabled) and *IPN Regex* (`PART_IPN_REGEX`); this needs user confirmation before it is used. | UI-CREATE-016 (and API-EDGE-014) | Open |
+| OQ-CREATE-08 | How are duplicate IPNs handled at creation, with duplicates allowed and not allowed? Is a rejection shown as a form error? The pages read do not describe this behavior or its controlling setting. The local source defines *Allow Duplicate IPN* (`PART_ALLOW_DUPLICATE_IPN`, default enabled) and *IPN Regex* (`PART_IPN_REGEX`); this needs user confirmation before it is used. | UI-CREATE-016 (and API-EDGE-014) | Partly resolved: with `PART_ALLOW_DUPLICATE_IPN` on (its value on local 1.6.3), a duplicate IPN is accepted (API 201) and both parts exist. Confirmed by user (2026-10-31). Still open: the result with the setting off, and whether a rejection is shown as a form error. |
 | OQ-CREATE-09 | What is the default unit? `part/` says blank (pieces); `part/views/` says `pcs`. | None yet (relevant to the Units of measure area) | Open |

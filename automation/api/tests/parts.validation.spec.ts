@@ -60,7 +60,38 @@ test.describe('Field-level validation', () => {
       });
     });
 
-    test.fixme('API-VAL-003: empty or whitespace-only name (blocked by OQ-VAL-03)', async () => {});
+    // OQ-VAL-03: blank names are rejected after whitespace is trimmed.
+    for (const name of ['', '   ']) {
+      const label = name ? 'a whitespace-only' : 'an empty';
+
+      test(`API-VAL-003: part with ${label} name`, async ({ parts }) => {
+        const token = uniqueName('pw-val');
+
+        const response = await test.step(`POST /api/part/ with ${label} name`, async () => {
+          return await parts.createInvalid({ name, description: token });
+        });
+
+        await test.step('Check 400 with a name error and no part was created', async () => {
+          expect(response.status()).toBe(400);
+          expect(await response.json()).toHaveProperty('name');
+          await expectPartsListed(await parts.listFiltered({ search: token }), []);
+        });
+      });
+
+      test(`API-VAL-003: category with ${label} name`, async ({ categories }) => {
+        const token = uniqueName('pw-val');
+
+        const response = await test.step(`POST /api/part/category/ with ${label} name`, async () => {
+          return await categories.createInvalid({ name, description: token });
+        });
+
+        await test.step('Check 400 with a name error and no category was created', async () => {
+          expect(response.status()).toBe(400);
+          expect(await response.json()).toHaveProperty('name');
+          expect((await categories.listOrFail({ search: token })).count).toBe(0);
+        });
+      });
+    }
 
     test('API-VAL-004: full update without name', async ({ parts, categories }) => {
       const { part, category } = await test.step('Setup: a part and a category with a known name and description', async () => {
@@ -167,7 +198,37 @@ test.describe('Field-level validation', () => {
       });
     }
 
-    test.fixme('API-VAL-008: category icon at its maximum length 100 (blocked by OQ-VAL-04)', async () => {});
+    // OQ-VAL-04: icon must be pack:name:variant for a real icon, so a valid 100-character icon cannot be built.
+    const ICON_ROWS = [
+      { label: 'a valid icon', icon: 'ti:box:outline', accepted: true },
+      { label: 'a variant the pack does not have', icon: 'ti:box:filled', accepted: false },
+      { label: 'an unknown icon name', icon: 'ti:nonexistent-icon:outline', accepted: false },
+      { label: 'no pack or variant', icon: 'box', accepted: false },
+      { label: 'no variant', icon: 'ti:box', accepted: false },
+    ];
+
+    for (const { label, icon, accepted } of ICON_ROWS) {
+      test(`API-VAL-008: category icon with ${label} is ${accepted ? 'accepted' : 'rejected'}`, async ({ categories }) => {
+        const name = uniqueName('pw-category');
+
+        const response = await test.step(`POST /api/part/category/ with icon ${icon}`, async () => {
+          return await categories.createInvalid({ name, icon });
+        });
+
+        await test.step(accepted ? 'Check 201 and the icon is stored as sent' : 'Check 400 with an _icon error and no category was created', async () => {
+          if (accepted) {
+            expect(response.status()).toBe(201);
+            const created = (await response.json()) as Category;
+            const stored = (await (await categories.get(created.pk)).json()) as Record<string, unknown>;
+            expect(stored.icon).toBe(icon);
+          } else {
+            expect(response.status()).toBe(400);
+            expect(await response.json()).toHaveProperty('_icon');
+            expect((await categories.listOrFail({ search: name })).count).toBe(0);
+          }
+        });
+      });
+    }
 
     for (const { field, maxLength } of CATEGORY_OVER_LENGTH_ROWS) {
       test(`API-VAL-009: category ${field} one character over the maximum ${maxLength}`, async ({ categories }) => {
