@@ -14,24 +14,24 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'LOCALHOST (default) starts a throwaway InvenTree and runs against http://localhost. REMOTE runs thone public demo: before choosing it, open https://demo.inventree.org/web/login and check it loads as it is down sometimes'
+        description: 'LOCALHOST: throwaway InvenTree in the job. REMOTE: public demo (check https://demo.inventree.org/web/login loads first)'
         type: choice
         options: [LOCALHOST, REMOTE]
         default: LOCALHOST
       tags:
-        description: 'Playwright --grep filter, for example @smoke or "@smoke|API-CAT". Use "." to run everything; empty runs @smoke, or the whole suite when shards is more than 1'
+        description: 'Playwright --grep, e.g. @smoke or "@smoke|API-CAT". "." = all; empty = @smoke (all when sharded)'
         type: string
         default: '@smoke'
       workers:
-        description: 'Parallel workers: a number or percentage (50%). Considering the load, safe number on demo site is 2'
+        description: 'Parallel workers: number or percentage (50%). Keep 2 or less on REMOTE'
         type: string
         default: '2'
       retries:
-        description: 'Retries per failed test. Empty = no retries. Tests that pass only on retry are reported as flaky'
+        description: 'Retries per failed test (empty = 0). Passing on retry is reported as flaky'
         type: string
         default: '2'
       shards:
-        description: 'Parallel jobs per project (1-8); empty or 1 = one job. Shards split only tests matching tags; use "." to split the whole suite'
+        description: 'Parallel jobs per project, 1-8 (empty = 1). Splits only tests matching tags; use "." to split all'
         type: string
         default: ''
   # Nightly full regression on a throwaway LOCALHOST instance, split over 4 shards; the workflow runs on the default branch only.
