@@ -127,7 +127,7 @@ jobs:
             exit 1
           fi
 
-      # Generates a superuser for this run only and exports it as LOCAL_SUPERUSER_USERNAME / LOCAL_SUPERUSER_PASSWORD.
+      # Generates a superuser and a view-only reader for this run only, exported as LOCAL_SUPERUSER_* and LOCAL_READER_*.
       - name: Start InvenTree ${{ env.INVENTREE_VERSION }} on http://localhost
         if: env.ENV == 'LOCALHOST'
         working-directory: ${{ github.workspace }}
@@ -171,9 +171,11 @@ jobs:
 
       - name: Run tests (${{ github.event_name == 'schedule' && 'full regression' || (needs.plan.outputs.total != '1' && inputs.tags == '' && 'full suite slice') || env.GREP }})
         env:
-          # LOCALHOST uses the superuser generated for this run; REMOTE uses the environment secrets.
+          # LOCALHOST uses the users generated for this run; REMOTE uses the environment secrets.
           SUPERUSER_USERNAME: ${{ env.LOCAL_SUPERUSER_USERNAME || secrets.SUPERUSER_USERNAME }}
           SUPERUSER_PASSWORD: ${{ env.LOCAL_SUPERUSER_PASSWORD || secrets.SUPERUSER_PASSWORD }}
+          READER_USERNAME: ${{ env.LOCAL_READER_USERNAME || secrets.READER_USERNAME }}
+          READER_PASSWORD: ${{ env.LOCAL_READER_PASSWORD || secrets.READER_PASSWORD }}
         run: |
           args=()
           # The @smoke default must not apply to a sharded run, or the shards would split only the smoke tests.
