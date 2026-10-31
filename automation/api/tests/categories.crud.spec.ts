@@ -276,8 +276,11 @@ test.describe('Part Categories CRUD', () => {
       });
     });
 
-    // Application finding (OQ-ACAT-03): the schema lists no request body, but the server returns 400 without delete_parts and delete_child_categories.
-    test.fixme('API-CAT-014: delete an empty category without a request body (application finding: the server returns 400)', async ({ categories }) => {
+    // Expected to fail until InvenTree accepts the body-less DELETE its schema documents; turns red once fixed.
+    test.fail(
+      'API-CAT-014: delete an empty category without a request body',
+      { annotation: { type: 'issue', description: 'Application finding OQ-ACAT-03: the server returns 400 without delete_parts and delete_child_categories, which the schema does not list' } },
+      async ({ categories }) => {
       const created = await test.step('Setup: POST /api/part/category/', async () => {
         return await categories.createOrFail(newCategory());
       });
@@ -290,7 +293,8 @@ test.describe('Part Categories CRUD', () => {
         expect(response.status()).toBe(204);
         expect((await categories.listOrFail({ search: created.name })).count).toBe(0);
       });
-    });
+      },
+    );
 
     // OQ-ACAT-06 (confirmed by the user): kept records move up to the deleted category's parent `G`.
     const DELETE_FLAG_ROWS = [

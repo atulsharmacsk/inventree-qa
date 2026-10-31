@@ -1,8 +1,89 @@
+import type { APIResponse } from '@playwright/test';
 import { checkPartShape, expectPartsListed } from '../src/checks';
 import type { Part } from '../../shared/models';
+import type { BomItemService } from '../../shared/services/bom-item.service';
+import type { CompanyService } from '../../shared/services/company.service';
+import type { OrderService } from '../../shared/services/order.service';
+import type { PartService } from '../../shared/services/part.service';
+import type { StockItemService } from '../../shared/services/stock-item.service';
+import type { StockLocationService } from '../../shared/services/stock-location.service';
+import type { SupplierPartService } from '../../shared/services/supplier-part.service';
 import type { ManufacturerPart, SupplierPart } from '../src/models';
 import { newCategory, newCompany, newManufacturerPart, newPart, newStockLocation, newSupplierPart, uniqueName } from '../src/test-data';
 import { expect, test } from './fixtures';
+
+type InactivePartContext = {
+  parts: PartService;
+  stockItems: StockItemService;
+  stockLocations: StockLocationService;
+  bomItems: BomItemService;
+  companies: CompanyService;
+  supplierParts: SupplierPartService;
+  purchaseOrders: OrderService;
+  salesOrders: OrderService;
+};
+
+/** API-REL-016 to 019 rows: each request that uses an inactive part, and how to count what it created. */
+type InactivePartCase = {
+  id: string;
+  request: string;
+  setupStep: string;
+  arrange: (ctx: InactivePartContext, part: Part) => Promise<{ send: () => Promise<APIResponse>; count: () => Promise<number> }>;
+};
+
+const INACTIVE_PART_CASES: InactivePartCase[] = [
+  {
+    id: 'API-REL-016',
+    request: 'POST /api/stock/',
+    setupStep: 'Setup: stock location',
+    arrange: async ({ stockLocations, stockItems }, part) => {
+      const location = await stockLocations.createOrFail(newStockLocation());
+      return {
+        send: () => stockItems.create({ part: part.pk, quantity: 1, location: location.pk }),
+        count: async () => (await stockItems.listOrFail({ part: part.pk })).count,
+      };
+    },
+  },
+  {
+    id: 'API-REL-017',
+    request: 'POST /api/bom/',
+    setupStep: 'Setup: assembly part',
+    arrange: async ({ parts, bomItems }, part) => {
+      const assembly = await parts.createOrFail(newPart({ assembly: true }));
+      return {
+        send: () => bomItems.create({ part: assembly.pk, sub_part: part.pk, quantity: 1 }),
+        count: async () => (await bomItems.listOrFail(assembly.pk)).count,
+      };
+    },
+  },
+  {
+    id: 'API-REL-018',
+    request: 'POST /api/order/po-line/',
+    setupStep: 'Setup: supplier, supplier part for the inactive part, and a purchase order',
+    arrange: async ({ companies, supplierParts, purchaseOrders }, part) => {
+      const supplier = await companies.createOrFail(newCompany({ is_supplier: true }));
+      const supplierPart = await supplierParts.createOrFail(newSupplierPart(part.pk, supplier.pk));
+      const order = await purchaseOrders.createOrFail({ supplier: supplier.pk });
+      return {
+        send: () => purchaseOrders.createLine({ order: order.pk, part: supplierPart.pk, quantity: 1 }),
+        count: async () => (await purchaseOrders.listLinesOrFail(order.pk)).count,
+      };
+    },
+  },
+  {
+    id: 'API-REL-019',
+    request: 'POST /api/order/so-line/',
+    setupStep: 'Setup: customer and a sales order',
+    arrange: async ({ companies, salesOrders }, part) => {
+      const customer = await companies.createOrFail(newCompany({ is_customer: true, is_supplier: false }));
+      const order = await salesOrders.createOrFail({ customer: customer.pk });
+      return {
+        send: () => salesOrders.createLine({ order: order.pk, part: part.pk, quantity: 1 }),
+        count: async () => (await salesOrders.listLinesOrFail(order.pk)).count,
+      };
+    },
+  },
+];
 
 // Manual cases: test-cases/api/relational-integrity.md
 
@@ -357,5 +438,32 @@ test.describe('Relational integrity', () => {
         expect((await companies.get(supplier.pk)).status()).toBe(200);
       });
     });
+  });
+
+  // OQ-REL-06 (confirmed by the user as a finding): the schema documents only 201, so any 4xx counts as a rejection.
+  test.describe('Inactive parts', () => {
+    for (const row of INACTIVE_PART_CASES) {
+      test.fail(
+        `${row.id}: ${row.request} for an inactive part is rejected`,
+        { annotation: { type: 'issue', description: 'Application finding OQ-REL-06: the API accepts this request for an inactive part (201), while the UI hides inactive parts' } },
+        async ({ parts, stockItems, stockLocations, bomItems, companies, supplierParts, purchaseOrders, salesOrders }) => {
+          const ctx = { parts, stockItems, stockLocations, bomItems, companies, supplierParts, purchaseOrders, salesOrders };
+
+          const part = await test.step('Setup: inactive part with Component, Purchaseable and Salable on', async () => {
+            return await parts.createOrFail(newPart({ active: false, component: true, purchaseable: true, salable: true }));
+          });
+
+          const attempt = await test.step(row.setupStep, async () => row.arrange(ctx, part));
+
+          const response = await test.step(row.request, async () => attempt.send());
+
+          await test.step('Check a 4xx status and that no record was created', async () => {
+            expect(response.status()).toBeGreaterThanOrEqual(400);
+            expect(response.status()).toBeLessThan(500);
+            expect(await attempt.count()).toBe(0);
+          });
+        },
+      );
+    }
   });
 });

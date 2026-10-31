@@ -1,8 +1,8 @@
 # API Manual Tests: Relational Integrity
 
-Covers the links between parts and other records: category assignment, default stock locations, and supplier and manufacturer linkage. Index, shared assumptions, and overall coverage: [api-manual-tests.md](../api-manual-tests.md).
+Covers the links between parts and other records: category assignment, default stock locations, supplier and manufacturer linkage, and actions on inactive parts. Index, shared assumptions, and overall coverage: [api-manual-tests.md](../api-manual-tests.md).
 
-`docs:` = `https://docs.inventree.org/en/stable/`. Schema operations are cited by the category page they appear on (`docs:api/schema/part/`, `docs:api/schema/stock/`, `docs:api/schema/company/`).
+`docs:` = `https://docs.inventree.org/en/stable/`. Schema operations are cited by the category page they appear on (`docs:api/schema/part/`, `docs:api/schema/stock/`, `docs:api/schema/company/`, `docs:api/schema/bom/`, `docs:api/schema/order/`).
 
 **Version check:** the schema pages document API version 561; the index records `apiVersion` 561 for the local instance. No mismatch.
 
@@ -22,6 +22,10 @@ Covers the links between parts and other records: category assignment, default s
 | `POST`, `GET` | `/api/company/part/` | `company` | Supplier parts (required writable: `part`, `supplier`, `SKU`); filters `part`, `supplier`, `SKU` |
 | `POST`, `GET` | `/api/company/part/manufacturer/` | `company` | Manufacturer parts (required writable: `part`, `manufacturer`); filter `part` |
 | `DELETE` | `/api/part/{id}/` | `part` | 204; effect on linked supplier parts (OQ-REL-05) |
+| `POST`, `GET` | `/api/stock/` | `stock` | Stock item for an inactive part; `part` filter |
+| `POST`, `GET` | `/api/bom/` | `bom` | BOM line with an inactive `sub_part` (required: `part`, `sub_part`); `part` filter |
+| `POST` | `/api/order/po/`, `/api/order/so/` | `order` | Test-owned purchase and sales orders |
+| `POST`, `GET` | `/api/order/po-line/`, `/api/order/so-line/` | `order` | Order lines for an inactive part (required: `order`, `quantity`; PO `part` is a supplier part); `order` filter |
 
 ## Sources Ingested
 
@@ -31,7 +35,9 @@ Covers the links between parts and other records: category assignment, default s
 | `docs:api/schema/part/` | Part `category`, `default_location`, `category_default_location`, `initial_supplier` (InitialSupplier); Category `default_location`, `structural`; part list `search` fields |
 | `docs:api/schema/stock/` | `POST /api/stock/location/` and the Location schema |
 | `docs:api/schema/company/` | Company, SupplierPart, and ManufacturerPart endpoints and schemas |
-| `docs:part/` | Purchaseable parts can be linked to supplier parts |
+| `docs:api/schema/bom/` | `POST`/`GET /api/bom/` (documents only 201 for create) |
+| `docs:api/schema/order/` | Purchase and sales orders and their line endpoints (documents only 201 for create) |
+| `docs:part/` | Purchaseable parts can be linked to supplier parts; inactive parts are not available for many actions |
 | `docs:part/create/` | Supplier options when creating a purchaseable part |
 
 ## Requirements Traceability
@@ -46,6 +52,7 @@ Covers the links between parts and other records: category assignment, default s
 | REQ-REL-06 | Write-only `initial_supplier` (`supplier`, `sku`, `manufacturer`, `mpn`) adds initial supplier information when a part is created. For a purchaseable part, *Add Supplier Data* allows supplier and manufacturer part information to be added. | `docs:api/schema/part/` InitialSupplier; `docs:part/create/#supplier-options` |
 | REQ-REL-07 | `POST /api/company/part/manufacturer/` creates a manufacturer part (`part`, `manufacturer` required); a supplier part's `manufacturer_part` links to it. | `docs:api/schema/company/` ManufacturerPart, SupplierPart `manufacturer_part` |
 | REQ-REL-08 | The part list `search` covers supplier part SKU and manufacturer part MPN. | `docs:api/schema/part/` `GET /api/part/` `search` |
+| REQ-REL-09 | An inactive part is not available for many actions but remains in the database. | `docs:part/#active-parts`; OQ-REL-06 |
 
 ## Category Assignment
 
@@ -220,6 +227,54 @@ Covers the links between parts and other records: category assignment, default s
 - **Requirements:** REQ-REL-05
 - **Sources:** schema `DELETE /api/part/{id}/`, `GET /api/company/part/{id}/`; OQ-REL-05 (local 1.6.3, confirmed by user, 2026-10-31)
 
+## Inactive Parts
+
+The schema documents only 201 for these creates, so no rejection status is specified: any 4xx counts as a rejection (OQ-REL-06). Local 1.6.3 accepts all four with 201; each case is automated as an expected failure.
+
+### API-REL-016: Create a stock item for an inactive part
+- **Priority:** P2
+- **Type:** Negative
+- **Automation candidate:** Yes (expected failure)
+- **Preconditions:** A test-owned part created with `active: false`; a test-owned stock location.
+- **Request:** `POST /api/stock/` with `part`, `quantity: 1`, `location`; then `GET /api/stock/?part={id}&limit=…`.
+- **Expected status:** 4xx (code not documented).
+- **Expected business result:** No stock item is created for the part (`count` 0).
+- **Requirements:** REQ-REL-09
+- **Sources:** `docs:part/#active-parts`; schema `POST /api/stock/`; OQ-REL-06 (application finding, confirmed by user, 2026-10-31)
+
+### API-REL-017: Add an inactive part to a BOM
+- **Priority:** P2
+- **Type:** Negative
+- **Automation candidate:** Yes (expected failure)
+- **Preconditions:** A test-owned inactive component part; a test-owned assembly part.
+- **Request:** `POST /api/bom/` with `part` (assembly), `sub_part` (inactive part), `quantity: 1`; then `GET /api/bom/?part={assembly}&limit=…`.
+- **Expected status:** 4xx (code not documented).
+- **Expected business result:** The assembly has no BOM lines (`count` 0).
+- **Requirements:** REQ-REL-09
+- **Sources:** `docs:part/#active-parts`; schema `POST /api/bom/`; OQ-REL-06 (application finding, confirmed by user, 2026-10-31)
+
+### API-REL-018: Add an inactive part to a purchase order
+- **Priority:** P2
+- **Type:** Negative
+- **Automation candidate:** Yes (expected failure)
+- **Preconditions:** A test-owned inactive purchaseable part with a test-owned supplier part from a test-owned supplier; a test-owned pending purchase order for that supplier.
+- **Request:** `POST /api/order/po-line/` with `order`, `part` (the supplier part), `quantity: 1`; then `GET /api/order/po-line/?order={id}&limit=…`.
+- **Expected status:** 4xx (code not documented).
+- **Expected business result:** The order has no line items (`count` 0).
+- **Requirements:** REQ-REL-09
+- **Sources:** `docs:part/#active-parts`; schema `POST /api/order/po-line/`; OQ-REL-06 (application finding, confirmed by user, 2026-10-31)
+
+### API-REL-019: Add an inactive part to a sales order
+- **Priority:** P2
+- **Type:** Negative
+- **Automation candidate:** Yes (expected failure)
+- **Preconditions:** A test-owned inactive salable part; a test-owned customer and pending sales order.
+- **Request:** `POST /api/order/so-line/` with `order`, `part`, `quantity: 1`; then `GET /api/order/so-line/?order={id}&limit=…`.
+- **Expected status:** 4xx (code not documented).
+- **Expected business result:** The order has no line items (`count` 0).
+- **Requirements:** REQ-REL-09
+- **Sources:** `docs:part/#active-parts`; schema `POST /api/order/so-line/`; OQ-REL-06 (application finding, confirmed by user, 2026-10-31)
+
 ## Coverage
 
 | Sub-area | P1 | P2 | P3 | Total |
@@ -227,9 +282,10 @@ Covers the links between parts and other records: category assignment, default s
 | Category Assignment | 3 | 2 | 0 | 5 |
 | Default Locations | 0 | 1 | 2 | 3 |
 | Supplier Linkage | 1 | 3 | 3 | 7 |
-| **Total** | **4** | **6** | **5** | **15** |
+| Inactive Parts | 0 | 4 | 0 | 4 |
+| **Total** | **4** | **10** | **5** | **19** |
 
-All 8 requirements are covered by at least one case.
+All 9 requirements are covered by at least one case.
 
 ## Open Questions
 
@@ -240,3 +296,4 @@ All 8 requirements are covered by at least one case.
 | OQ-REL-03 | Can a supplier part be linked to a part with `purchaseable: false`? The documentation says the flag "allows" linking but not that it is required. | API-REL-011 | Resolved: rejected with 400 and a `part` error; no supplier part is created. The message (`Invalid pk "<id>" - object does not exist.`) is misleading because the part exists; recorded as a minor application finding. Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-REL-04 | Is a supplier part rejected when its `supplier` company has `is_supplier: false`, and with which status? | API-REL-012 | Resolved: rejected with 400 and a `supplier` error; no supplier part is created. Same misleading "object does not exist" message as OQ-REL-03 (minor application finding). Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-REL-05 | When a part with supplier parts is deleted, are the supplier parts deleted too, or is the delete rejected? The schema documents only 204. | API-REL-015 | Resolved: the delete returns 204 and cascades to the part's supplier parts (404 afterwards); the supplier company is kept. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-REL-06 | Does the API reject stock items, BOM lines, and purchase or sales order lines for an inactive part? The documentation says only "not available for many actions"; the schema documents only 201. | API-REL-016 to API-REL-019 | Resolved as an application finding: local 1.6.3 accepts all four with 201, while the UI pickers hide inactive parts (UI-ATTR-013). The user confirmed rejection is the intended behavior (2026-10-31); the cases keep "4xx, nothing created" and are automated as expected failures. |

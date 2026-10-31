@@ -207,18 +207,20 @@ Also checked: the root `README.md` Open Review Findings (OQ-PART-02 observation 
 ### UI-ATTR-013: Inactive part restrictions
 - **Priority:** P1
 - **Type:** Negative
-- **Preconditions:** A test-owned inactive part with *Component*, *Purchaseable*, and *Salable* on and a supplier part. A test-owned assembly, stock location, supplier, and customer.
-- **Steps:** Try each action with the inactive part.
+- **Preconditions:** Two test-owned parts with *Component*, *Purchaseable*, and *Salable* on and names sharing a unique prefix: one inactive, and one active control part. A test-owned assembly, stock location, supplier with a supplier part for each part, purchase order for that supplier, customer, and sales order for that customer.
+- **Steps:** For each action, open the form and type the shared prefix into its part field.
 
-  | Action |
-  |---|
-  | Create a new stock item for the part |
-  | Add the part to the assembly's BOM |
-  | Add the part to a new purchase order |
-  | Add the part to a new sales order |
-- **Expected result:** See OQ-ATTR-05. The documentation states only that an inactive part "is not available for many actions".
+  | Action | Form and part field |
+  |---|---|
+  | Add the part to the assembly's BOM | Assembly > *Bill of Materials* > *Edit BOM* > *Add BOM Item*, field *Part* (`sub_part`) |
+  | Add the part to the purchase order | Purchase order > *Line Items* > *Add Line Item*, field *Supplier Part* |
+  | Add the part to the sales order | Sales order > *Line Items* > *Add Line Item*, field *Part* |
+  | Create a new stock item | Stock location > *Stock Items* > *Add Stock Item*, field *Part* |
+
+  Then open the inactive part > *Stock* > *Add Stock Item*, enter quantity 1, and submit (if the action is offered).
+- **Expected result:** In each form the active control part is offered and the inactive part is not. No error message is shown; the picker only lists active parts. From the inactive part's own *Stock* tab, no stock item is created.
 - **Requirements:** REQ-ATTR-10
-- **Source:** `docs:part/#active-parts`
+- **Source:** `docs:part/#active-parts`; Local 1.6.3, confirmed by user (2026-10-31) (OQ-ATTR-05).
 
 ### UI-ATTR-014: Reactivate a part
 - **Priority:** P2
@@ -301,6 +303,6 @@ All 11 requirements are covered by at least one case. Together with UI-TAB-001 t
 | OQ-ATTR-02 | Which settings enable the return order and transfer order features, and are they enabled by default? | UI-ATTR-002 | Open |
 | OQ-ATTR-03 | Can a part with *Component* off be added to a BOM? `part/` says a Component "can be used" in an assembly but does not say other parts cannot. | UI-ATTR-006 | Open |
 | OQ-ATTR-04 | In which form are serial numbers entered for a new stock item, and how is a rejected (duplicate) serial number shown? | UI-ATTR-007, UI-ATTR-008 | Open |
-| OQ-ATTR-05 | Which actions are blocked for an inactive part (new stock, BOM, purchase and sales orders, builds), and how is the restriction shown? The documentation says only "not available for many actions". Required by the assessment's negative scenarios. | UI-ATTR-013 | Open |
+| OQ-ATTR-05 | Which actions are blocked for an inactive part (new stock, BOM, purchase and sales orders, builds), and how is the restriction shown? The documentation says only "not available for many actions". Required by the assessment's negative scenarios. **Answer (local 1.6.3, confirmed by user 2026-10-31):** the part pickers of the Add BOM Item, purchase order and sales order Add Line Item, and stock location Add Stock Item forms list only active parts; no error is shown. The API accepting all four actions is an application finding (confirmed by user 2026-10-31; OQ-REL-06, API-REL-016 to API-REL-019). Builds not checked. **Application finding (confirmed by user 2026-10-31):** the inactive part's own *Stock* tab still opens Add Stock Item with the part pre-filled and saves it (201); the UI-ATTR-013 test for it is an expected failure. | UI-ATTR-013 | Partly resolved |
 | OQ-ATTR-06 | Can an active part be deleted? The documentation recommends deactivating instead but states no restriction. On local 1.6.3, `DELETE /api/part/{id}/` for an active part returned 400 "Cannot delete this part as it is still active" (OQ-PART-02, confirmed by user for the API on 2026-10-30). | UI-ATTR-015 | Open |
 | OQ-ATTR-07 | Can a part with *Purchaseable* off be added to a purchase order, or one with *Salable* off to a sales order? The documentation says the flags "allow" these actions but not that they are required. | UI-ATTR-011 | Open |

@@ -208,7 +208,7 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 - **Automation candidate:** Yes
 - **Preconditions:** A test-owned category with a unique name, no sub-categories, and no parts.
 - **Request:** Two variants, each followed by `GET /api/part/category/?search=<unique name>&limit=<n>`: (a) `DELETE /api/part/category/{id}/` with body `{"delete_parts": false, "delete_child_categories": false}`; (b) the same `DELETE` with no body, as the schema describes it.
-- **Expected status:** 204 for the delete in both variants; 200 for the list. Observed on local 1.6.3: variant (a) returns 204; variant (b) returns 400 (application finding, OQ-ACAT-03), so (b) is `fixme`.
+- **Expected status:** 204 for the delete in both variants; 200 for the list. Observed on local 1.6.3: variant (a) returns 204; variant (b) returns 400 (application finding, OQ-ACAT-03), so (b) runs as an expected failure (`test.fail`) and turns red once the application accepts the request.
 - **Expected business result:** The list does not contain the deleted category.
 - **Requirements:** REQ-ACAT-07, REQ-ACAT-04
 - **Sources:** schema `DELETE /api/part/category/{id}/`

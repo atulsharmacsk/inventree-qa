@@ -1,6 +1,7 @@
 import {
   PART_MODEL_TYPE,
   type NewCategory,
+  type NewCompany,
   type NewParameterTemplate,
   type NewPart,
   type NewStockItem,
@@ -25,6 +26,14 @@ export function newCategory(overrides: Partial<NewCategory> = {}): NewCategory {
 
 export function newStockLocation(overrides: Partial<NewStockLocation> = {}): NewStockLocation {
   return { name: uniqueName('pw-ui-location'), ...overrides };
+}
+
+export function newSupplier(): NewCompany {
+  return { name: uniqueName('pw-ui-supplier'), currency: 'USD', is_supplier: true };
+}
+
+export function newCustomer(): NewCompany {
+  return { name: uniqueName('pw-ui-customer'), currency: 'USD', is_customer: true, is_supplier: false };
 }
 
 /** A part parameter template without units. */

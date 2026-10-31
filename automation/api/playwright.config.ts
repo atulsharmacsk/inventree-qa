@@ -25,5 +25,9 @@ export default defineConfig({
     baseURL: baseUrl(),
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'api' }],
+  projects: [
+    // `settings` runs after every `api` test, so a test that changes a global setting never overlaps another test.
+    { name: 'api', testIgnore: /\.settings\.spec\.ts$/, teardown: 'settings' },
+    { name: 'settings', testMatch: /\.settings\.spec\.ts$/, fullyParallel: false },
+  ],
 });

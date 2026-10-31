@@ -35,9 +35,18 @@ export default defineConfig({
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'ui',
-      testIgnore: /auth\.setup\.ts/,
+      testIgnore: [/auth\.setup\.ts/, /\.settings\.spec\.ts$/],
       dependencies: ['setup'],
+      // `settings` runs after every `ui` test, so a test that changes a global setting never overlaps another test.
+      teardown: 'settings',
       // Storage state is chosen per test from the `role` fixture in tests/fixtures.ts.
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Teardown of `ui`, so it cannot depend on `setup`; it reuses the sessions `ui` already required.
+      name: 'settings',
+      testMatch: /\.settings\.spec\.ts$/,
+      fullyParallel: false,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

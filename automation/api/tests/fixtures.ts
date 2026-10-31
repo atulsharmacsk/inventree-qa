@@ -4,12 +4,16 @@ import { requestToken, revokeToken, withApiTokens, type TokenForRole } from '../
 import { reportCleanup } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
+import { BomItemService } from '../../shared/services/bom-item.service';
+import { OrderService } from '../../shared/services/order.service';
+import { currentEnvironment } from '../../shared/environments';
 import { PartService } from '../../shared/services/part.service';
+import { SettingsService, overrideGlobalSettings } from '../../shared/services/settings.service';
 import { StockItemService } from '../../shared/services/stock-item.service';
 import { StockLocationService } from '../../shared/services/stock-location.service';
-import { CompanyService } from '../src/services/company.service';
+import { CompanyService } from '../../shared/services/company.service';
 import { ManufacturerPartService } from '../src/services/manufacturer-part.service';
-import { SupplierPartService } from '../src/services/supplier-part.service';
+import { SupplierPartService } from '../../shared/services/supplier-part.service';
 import { SystemService } from '../src/services/system.service';
 import { withHttpLogging } from '../src/http-logging';
 
@@ -30,7 +34,12 @@ type Fixtures = {
   companies: CompanyService;
   supplierParts: SupplierPartService;
   manufacturerParts: ManufacturerPartService;
+  bomItems: BomItemService;
+  purchaseOrders: OrderService;
+  salesOrders: OrderService;
   system: SystemService;
+  /** Sets a global setting for this test and restores it afterwards; LOCALHOST only, used by `*.settings.spec.ts`. */
+  globalSetting: (key: string, value: string) => Promise<void>;
 };
 
 // Shared by all tests in one worker process.
@@ -105,6 +114,12 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     reportCleanup(testInfo, await stockLocations.deleteCreated());
   },
 
+  // Set up before `parts` and torn down after it, so test records are cleaned up while the setting still applies.
+  globalSetting: async ({ authenticatedRequest }, use, testInfo) => {
+    testInfo.skip(!SETTINGS_TESTS_ALLOWED, SETTINGS_TESTS_SKIP_REASON);
+    await overrideGlobalSettings(new SettingsService(authenticatedRequest), use);
+  },
+
   // Depends on `parts` and `stockLocations` so stock is deleted before the parts and locations it belongs to.
   stockItems: async ({ authenticatedRequest, parts, stockLocations }, use, testInfo) => {
     void parts;
@@ -142,6 +157,31 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   system: async ({ authenticatedRequest }, use) => {
     await use(new SystemService(authenticatedRequest));
   },
+
+  bomItems: async ({ authenticatedRequest }, use) => {
+    await use(new BomItemService(authenticatedRequest));
+  },
+
+  // Orders depend on what their lines point to, so they are deleted (with their lines) first.
+  purchaseOrders: async ({ authenticatedRequest, companies, supplierParts }, use, testInfo) => {
+    void companies;
+    void supplierParts;
+    const orders = new OrderService(authenticatedRequest, 'po');
+    await use(orders);
+    reportCleanup(testInfo, await orders.deleteCreated());
+  },
+
+  salesOrders: async ({ authenticatedRequest, companies, parts }, use, testInfo) => {
+    void companies;
+    void parts;
+    const orders = new OrderService(authenticatedRequest, 'so');
+    await use(orders);
+    reportCleanup(testInfo, await orders.deleteCreated());
+  },
 });
 
 export { expect };
+
+/** Settings specs skip with this before any fixture runs, so REMOTE (the shared demo) is never contacted for them. */
+export const SETTINGS_TESTS_ALLOWED = currentEnvironment() === 'LOCALHOST';
+export const SETTINGS_TESTS_SKIP_REASON = 'Changes a global setting; runs on LOCALHOST only, never on the shared demo';

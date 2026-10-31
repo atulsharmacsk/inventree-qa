@@ -56,6 +56,11 @@ export class PartService {
     return this.request.put(`/api/part/${id}/`, { data: body });
   }
 
+  /** Sends a raw string as a JSON body, for example malformed JSON that a typed body cannot express. */
+  createRawJson(rawBody: string): Promise<APIResponse> {
+    return this.request.post('/api/part/', { data: rawBody, headers: { 'Content-Type': 'application/json' } });
+  }
+
   /** Sends `DELETE` to the list endpoint, which the schema does not list. */
   deleteList(): Promise<APIResponse> {
     return this.request.delete('/api/part/');

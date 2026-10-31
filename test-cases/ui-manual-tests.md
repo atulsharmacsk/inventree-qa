@@ -21,7 +21,7 @@ The assessment names these scenarios explicitly. Each is covered in its feature 
 | Scenario | Covered by |
 |---|---|
 | Duplicate IPN | UI-CREATE-016 in [part-creation.md](ui/part-creation.md); expected result pending OQ-CREATE-08 |
-| Inactive part restrictions | UI-ATTR-013 in [part-attributes.md](ui/part-attributes.md); expected result pending OQ-ATTR-05 |
+| Inactive part restrictions | UI-ATTR-013 in [part-attributes.md](ui/part-attributes.md); part pickers hide inactive parts (OQ-ATTR-05, confirmed 2026-10-31) |
 | Revision-of-revision prevention | UI-REV-007 in [part-revisions.md](ui/part-revisions.md); expected result pending OQ-REV-03 |
 
 ## Shared Assumptions

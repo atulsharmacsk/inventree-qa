@@ -30,11 +30,11 @@ The `setup` project (`tests/auth.setup.ts`) logs in once through the login page 
 | Path | Purpose |
 |---|---|
 | `tests/auth.setup.ts` | One-time login; saves storage state |
-| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `settings`), automatic cleanup reported as `cleanup` annotations |
+| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `stockLocations`, `companies`, `supplierParts`, `purchaseOrders`, `salesOrders`, `settings`), automatic cleanup reported as `cleanup` annotations |
 | `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`, `part.tabs.spec.ts`, `part.flow.spec.ts`) |
-| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item) |
+| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item), `OrderLineItemsPage` (purchase and sales order Add Line Item), `StockLocationPage` (Add Stock Item) |
 | `src/components/` | `NavigationComponent` (header tabs), `ModalFormComponent` (base for API form dialogs: fields by API name, form error, submit with response), `PartFormComponent` (Add/Edit Part, Active switch), `StockItemFormComponent` (Add Stock Item), `DeleteDialogComponent` (delete confirmation) |
-| `../shared/` | Code shared with the API project: token handling, `PartService`, `CategoryService`, `StockItemService`, `SettingsService` (read-only setting checks), models, `uniqueName`, cleanup annotations, and the redaction patterns |
+| `../shared/` | Code shared with the API project: token handling, `PartService`, `CategoryService`, `StockItemService`, `StockLocationService`, `CompanyService`, `SupplierPartService`, `OrderService`, `SettingsService`, models, `uniqueName`, cleanup annotations, and the redaction patterns |
 | `src/models/`, `src/data/` | UI-only types (`PartFormInput`), routes, storage-state path, unique-name factories |
 | `src/global-teardown.ts` | Rewrites every `trace.zip` with the shared `hideSecrets` patterns (session and CSRF cookies, auth and CSRF headers, tokens, the password) before the HTML report copies it |
 
@@ -47,7 +47,7 @@ Role-based locators are used throughout. InvenTree exposes many controls only th
 - Tests run with one worker. With two or more, the local Docker instance stops answering some requests (for example `/api/user/me/`) and the front-end falls back to the login page.
 - A "First Use Tour available" toast can cover the form's Submit button. Forms are submitted by keyboard so the tests do not start or dismiss the tour for the shared user.
 - The part Delete action is disabled while a part is active; cleanup deactivates (and unlocks) parts before deleting them, newest first so variants go before their template.
-- Tests never change global settings. UI-ATTR-017 reads `PART_ENABLE_LOCKING` and skips itself when it is off.
+- Only `*.settings.spec.ts` files may change a global setting, through a fixture that restores it, in a `settings` project that runs after all other tests and only on LOCALHOST. UI-ATTR-017 reads `PART_ENABLE_LOCKING` and skips itself when it is off.
 
 ## Results (2026-10-30, local 1.6.3, `ENV=LOCALHOST`)
 
@@ -59,7 +59,10 @@ Role-based locators are used throughout. InvenTree exposes many controls only th
 | UI-ATTR-008, UI-ATTR-012, UI-ATTR-016, UI-ATTR-017 | Passed |
 | UI-TAB-005, UI-TAB-006, UI-TAB-009, UI-TAB-011, UI-TAB-015, UI-TAB-019 (`part.tabs.spec.ts`) | Passed (per the Run D plan entry; not re-run in this update) |
 | UI-TAB-013, UI-TAB-018 | Skipped (`fixme`, blocked by OQ-TAB-07) |
-| UI-CREATE-009, UI-IMPORT-007, UI-IMPORT-008, UI-ATTR-013 | Skipped (`fixme`, blocked) |
+| UI-IMPORT-007, UI-IMPORT-008 | Skipped (`fixme`, blocked) |
+| UI-ATTR-013 (2026-10-31): BOM, purchase order, sales order, and stock location forms (4 tests) | Passed: the part picker offers the active control part and not the inactive part |
+| UI-ATTR-013 (2026-10-31): inactive part's own Stock tab | Expected failure (`test.fail`, application finding OQ-ATTR-05): a stock item is created |
+| UI-CREATE-009 (2026-10-31, `part.settings.spec.ts`, `settings` project) | Passed on LOCALHOST: switches *Initial Stock Data* on, then restores it; skips on REMOTE |
 
 Full suite: 12 passed, 4 skipped, 0 failed; no `cleanup` annotations.
 

@@ -11,4 +11,7 @@ export const ROUTES = {
   partsIndex: '/web/part/category/index/parts',
   categoryParts: (id: number) => `/web/part/category/${id}/parts`,
   part: (id: number) => `/web/part/${id}/`,
+  stockLocationItems: (id: number) => `/web/stock/location/${id}/stock-items`,
+  purchaseOrderLineItems: (id: number) => `/web/purchasing/purchase-order/${id}/line-items`,
+  salesOrderLineItems: (id: number) => `/web/sales/sales-order/${id}/line-items`,
 } as const;

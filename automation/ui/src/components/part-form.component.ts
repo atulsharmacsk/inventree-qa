@@ -33,6 +33,12 @@ export class PartFormComponent extends ModalFormComponent {
     await this.selectTreeOption('category', name);
   }
 
+  /** Fills the Initial Stock section, shown only while the Initial Stock Data setting (PART_CREATE_INITIAL) is on. */
+  async fillInitialStock(quantity: number, locationName: string): Promise<void> {
+    await this.numberField('initial_stock.quantity').fill(String(quantity));
+    await this.selectTreeOption('initial_stock.location', locationName);
+  }
+
   /** Sets the Active switch; the edit form loads the part's values first, so this waits for the switch. */
   async setActive(active: boolean): Promise<void> {
     await this.activeSwitch.waitFor({ state: 'attached' });

@@ -47,9 +47,19 @@ export class ModalFormComponent {
 
   /** Searches a related-record field and picks the option containing `text`. */
   async selectRelated(field: string, text: string): Promise<void> {
+    await this.searchRelated(field, text);
+    await this.relatedOption(text).first().click();
+  }
+
+  /** Types into a related-record field so it lists the matching records, without picking one. */
+  async searchRelated(field: string, text: string): Promise<void> {
     await this.relatedField(field).fill(text);
+  }
+
+  /** Options of an open related-record field that contain `text`. */
+  relatedOption(text: string): Locator {
     // The options menu is rendered in a portal on the page body, outside the dialog.
-    await this.page.getByRole('option').filter({ hasText: text }).first().click();
+    return this.page.getByRole('option').filter({ hasText: text });
   }
 
   async waitUntilReady(): Promise<void> {

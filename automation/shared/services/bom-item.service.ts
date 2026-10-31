@@ -1,9 +1,13 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { DEFAULT_PAGE_LIMIT, type BomItem, type Page } from '../models';
+import { DEFAULT_PAGE_LIMIT, type BomItem, type NewBomItem, type Page } from '../models';
 
-/** Reads /api/bom/. BOM items are deleted with their assembly or component part, so this service creates nothing to clean up. */
+/** Sends requests to /api/bom/. BOM items are deleted with their assembly or component part, so this service creates nothing to clean up. */
 export class BomItemService {
   constructor(private request: APIRequestContext) {}
+
+  create(item: NewBomItem): Promise<APIResponse> {
+    return this.request.post('/api/bom/', { data: item });
+  }
 
   list(part: number, limit = DEFAULT_PAGE_LIMIT): Promise<APIResponse> {
     return this.request.get('/api/bom/', { params: { part, limit } });

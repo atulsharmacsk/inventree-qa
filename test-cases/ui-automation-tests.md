@@ -24,7 +24,7 @@ Part attributes is ordered before Part categories because Part CRUD automation (
 |---|---|---|---|---|
 | A | `/ui-automation Setup: auth, fixtures, page objects, redaction` | tests/auth.setup.ts, tests/fixtures.ts, tests/smoke.spec.ts | Framework only; smoke checks SMOKE-001, SMOKE-002 | Done (3 passed) |
 | B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005; fixme: 009 (setting), 013 (non-superuser), UI-IMPORT-007 (OQ-CREATE-05), UI-IMPORT-008 (OQ-CREATE-06); deferred: UI-IMPORT-002, 004 (file upload) | Done (3 passed, 4 fixme) |
-| C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR-008, 012 (edit form, deactivate), 016 (delete inactive part), 017 (skips itself when `PART_ENABLE_LOCKING` is off); fixme: 013 (OQ-ATTR-05) | Done (4 passed, 1 fixme) |
+| C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR-008, 012 (edit form, deactivate), 013 (inactive part not offered by 4 part pickers; OQ-ATTR-05 confirmed 2026-10-31; Stock tab variant is `test.fail`, application finding), 016 (delete inactive part), 017 (skips itself when `PART_ENABLE_LOCKING` is off) | Done (8 passed, 1 expected failure) |
 | D | `/ui-automation Part detail view tabs P1` | tests/part.tabs.spec.ts | UI-TAB-005, 006, 009, 011, 015, 019; fixme: 013, 018 (part locking setting) | Done (6 passed, 2 fixme) |
 | E | `/ui-automation Cross-functional flow` | tests/part.flow.spec.ts | UI-CREATE-015: create part, add parameter, create stock, verify in category view | Done (1 passed) |
 | F | `/ui-automation <area> P1` | tests/part.<area>.spec.ts | P1 cases of UI-CAT, UI-UNIT, UI-REV as they are drafted | To do |
@@ -58,7 +58,7 @@ Config: a `setup` project that the `ui` project depends on; `trace: 'retain-on-f
 |---|---|
 | Where edit and deactivate cases live | New UI-ATTR area (manual run 3), or append to Part creation |
 | Cross-functional flow case | Add UI-CREATE-015 (manual run 1b) |
-| Server settings (*Create Initial Stock*, `PART_ENABLE_LOCKING`) | Tests toggle and restore them, or keep UI-CREATE-009, UI-TAB-013, UI-TAB-018 as `fixme` |
+| Server settings (*Create Initial Stock*, `PART_ENABLE_LOCKING`) | Decided (2026-10-31): tests that switch a global setting live in `tests/*.settings.spec.ts`, run in the `settings` project after all `ui` tests, restore the setting through the `globalSetting` fixture, and run on LOCALHOST only. UI-CREATE-009 is automated there |
 
 ## Known Constraints
 
