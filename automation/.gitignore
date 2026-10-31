@@ -10,6 +10,9 @@ node_modules/
 /api/playwright-report/
 /ui/test-results/
 /ui/playwright-report/
+/api/blob-report/
+/ui/blob-report/
+all-blob-reports/
 /ui/playwright/.auth/
 allure-results/
 allure-report/

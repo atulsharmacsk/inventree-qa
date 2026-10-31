@@ -47,7 +47,7 @@ This table describes the current layout. Check the files before adding a layer, 
 - No magic values in specs: put endpoints in services, field lists in models, and defaults in factories.
 - Naming: `*.service.ts`, `*.page.ts`, `*.component.ts`, `*.assertions.ts`, `*.spec.ts`; specs use camelCase variables named after the domain (`parts`, `category`).
 - Keep functions small and single-purpose. Write a comment only to explain why, in one line.
-- Never commit `test.only`. Workers and retries come only from the `WORKERS` and `RETRIES` build parameters (`automation/shared/run-options.ts`); keep the config defaults (retries 0, UI workers 1) and never hard-code retries in a spec or config. Treat a test that passes only on retry (`flaky`) as a defect to investigate, not a pass. If the local instance is unreliable under parallel load, lower `workers` and record it as an environment issue.
+- Never commit `test.only`. Workers and retries come only from the `WORKERS` and `RETRIES` build parameters (`automation/shared/run-options.ts`); keep the config defaults (workers 2, retries 2, set in `run-options.ts` and the configs by user decision on 2026-10-31) and never hard-code retries in a spec. Treat a test that passes only on retry (`flaky`) as a defect to investigate, not a pass. If the local instance is unreliable under parallel load, lower `workers` and record it as an environment issue.
 
 ## Artifacts and secrets
 

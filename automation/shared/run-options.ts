@@ -9,10 +9,10 @@ export function workersFromEnv(fallback: number | string | undefined): number | 
   throw new Error(`Invalid WORKERS "${value}"; use a positive number (4) or a percentage (50%)`);
 }
 
-/** Retries per failed test from RETRIES, default 0; throws on an invalid value. */
+/** Retries per failed test from RETRIES, default 2; throws on an invalid value. */
 export function retriesFromEnv(): number {
   const value = process.env.RETRIES?.trim();
-  if (!value) return 0;
+  if (!value) return 2;
   if (/^\d+$/.test(value)) return Number(value);
   throw new Error(`Invalid RETRIES "${value}"; use 0 or a positive number`);
 }

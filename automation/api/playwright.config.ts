@@ -15,10 +15,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: retriesFromEnv(),
-  workers: workersFromEnv(process.env.CI ? 1 : undefined),
+  workers: workersFromEnv(2),
   reporter: [
     ['list'],
-    ['html', { open: 'never' }],
+    // CI shards write a blob report; the workflow's merge-reports job combines them into one HTML report.
+    process.env.CI ? ['blob'] : ['html', { open: 'never' }],
     ['allure-playwright', { resultsDir: path.resolve(__dirname, 'allure-results') }],
   ],
   use: {
