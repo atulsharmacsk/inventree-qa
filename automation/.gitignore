@@ -16,6 +16,7 @@ all-blob-reports/
 /ui/playwright/.auth/
 allure-results/
 allure-report/
+allure-history/
 
 # Local environment variables and credentials
 .env

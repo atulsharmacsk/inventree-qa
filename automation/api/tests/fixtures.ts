@@ -15,7 +15,7 @@ import { CompanyService } from '../../shared/services/company.service';
 import { ManufacturerPartService } from '../src/services/manufacturer-part.service';
 import { SupplierPartService } from '../../shared/services/supplier-part.service';
 import { SystemService } from '../src/services/system.service';
-import { withHttpLogging } from '../src/http-logging';
+import { withHttpLogging } from '../../shared/http-logging';
 
 // Everything a test can ask for by name, for example `async ({ parts }) => { ... }`.
 type Fixtures = {

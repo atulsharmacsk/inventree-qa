@@ -1,6 +1,7 @@
 import { test as base, expect, type APIRequestContext } from '@playwright/test';
 import { withApiTokens, type TokenForRole } from '../../shared/auth';
 import { reportCleanup } from '../../shared/cleanup';
+import { withHttpLogging } from '../../shared/http-logging';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { BomItemService } from '../../shared/services/bom-item.service';
 import { CategoryService } from '../../shared/services/category.service';
@@ -67,13 +68,13 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
 
   apiTokens: [async ({ playwright }, use) => withApiTokens(playwright.request, 'playwright-ui', use), { scope: 'worker' }],
 
-  // API setup and cleanup always run as the superuser, whatever role the browser uses.
-  apiRequest: async ({ playwright, baseURL, apiTokens }, use) => {
+  // API setup and cleanup always run as the superuser, whatever role the browser uses; each call is logged to the report.
+  apiRequest: async ({ playwright, baseURL, apiTokens }, use, testInfo) => {
     const request = await playwright.request.newContext({
       baseURL,
       extraHTTPHeaders: { Authorization: `Token ${await apiTokens('SUPERUSER')}` },
     });
-    await use(request);
+    await use(withHttpLogging(request, testInfo));
     await request.dispose();
   },
 
