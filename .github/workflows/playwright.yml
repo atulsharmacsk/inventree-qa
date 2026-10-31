@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'LOCALHOST (default) starts a throwaway InvenTree 1.6.3 inside each job and runs against http://localhost. REMOTE runs against the public demo: before choosing it, open https://demo.inventree.org/web/login and check the login page loads, because the demo is sometimes down'
+        description: 'LOCALHOST (default) starts a throwaway InvenTree and runs against http://localhost. REMOTE runs thone public demo: before choosing it, open https://demo.inventree.org/web/login and check the login page loads, because the demo is sometimes down'
         type: choice
         options: [LOCALHOST, REMOTE]
         default: LOCALHOST
@@ -23,13 +23,13 @@ on:
         type: string
         default: '@smoke'
       workers:
-        description: 'Parallel workers: a number or percentage (50%). Empty uses 2. On LOCALHOST use 1 if category tests fail: parallel category writes can corrupt the InvenTree category tree (see README)'
+        description: 'Parallel workers: a number or percentage (50%). Considering the load safe number on demo site is 2'
         type: string
-        default: ''
+        default: '2'
       retries:
-        description: 'Retries per failed test. Empty uses 2. Tests that pass only on retry are reported as flaky'
+        description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
         type: string
-        default: ''
+        default: '2'
       shards:
         description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; shards split only the tests that match tags, so use "." in tags to split the whole suite'
         type: string
