@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'LOCALHOST (default) starts a throwaway InvenTree and runs against http://localhost. REMOTE runs thone public demo: before choosing it, open https://demo.inventree.org/web/login and check the login page loads, because the demo is sometimes down'
+        description: 'LOCALHOST (default) starts a throwaway InvenTree and runs against http://localhost. REMOTE runs thone public demo: before choosing it, open https://demo.inventree.org/web/login and check it loads as it is down sometimes'
         type: choice
         options: [LOCALHOST, REMOTE]
         default: LOCALHOST
@@ -23,15 +23,15 @@ on:
         type: string
         default: '@smoke'
       workers:
-        description: 'Parallel workers: a number or percentage (50%). Considering the load safe number on demo site is 2'
+        description: 'Parallel workers: a number or percentage (50%). Considering the load, safe number on demo site is 2'
         type: string
         default: '2'
       retries:
-        description: 'Retries per failed test. Tests that pass only on retry are reported as flaky'
+        description: 'Retries per failed test. Empty = no retries. Tests that pass only on retry are reported as flaky'
         type: string
         default: '2'
       shards:
-        description: 'Number of parallel runners per project (1 to 8). Each runs its own slice of the tests (Playwright --shard N/total). Empty or 1 runs everything in one job; shards split only the tests that match tags, so use "." in tags to split the whole suite'
+        description: 'Parallel jobs per project (1-8); empty or 1 = one job. Shards split only tests matching tags; use "." to split the whole suite'
         type: string
         default: ''
   # Nightly full regression on a throwaway LOCALHOST instance, split over 4 shards; the workflow runs on the default branch only.
@@ -101,7 +101,8 @@ jobs:
       SHARD_TOTAL: ${{ needs.plan.outputs.total }}
       # 2 workers and 2 retries by default. On LOCALHOST, parallel category writes can corrupt the category tree (README finding).
       WORKERS: ${{ inputs.workers || '2' }}
-      RETRIES: ${{ inputs.retries || '2' }}
+      # Manual runs: the retries box (default 2, cleared = 0). Push, PR, and nightly runs have no inputs and use 2.
+      RETRIES: ${{ github.event_name != 'workflow_dispatch' && '2' || inputs.retries || '0' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
       SUPERUSER_USERNAME: ${{ secrets.SUPERUSER_USERNAME }}
       SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
