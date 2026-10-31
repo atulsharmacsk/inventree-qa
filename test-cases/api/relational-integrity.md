@@ -85,13 +85,13 @@ Covers the links between parts and other records: category assignment, default s
 ### API-REL-004: Assign a part to a structural category
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-REL-01
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category `S` with `structural: true`, and a test-owned part `P` with no category.
 - **Request:** `POST /api/part/` with a unique `name` and `category: <S id>`; and `PATCH /api/part/{P id}/` with `{"category": <S id>}`, then `GET /api/part/{P id}/`.
-- **Expected status:** See OQ-REL-01.
-- **Expected business result:** No part is created in `S`, and `P.category` is still `null`.
+- **Expected status:** 400 for both requests.
+- **Expected business result:** Each error body has a `category` key (local 1.6.3: `["Parts cannot be assigned to structural part categories!"]`). No part is created in `S`, and `P.category` is still `null`.
 - **Requirements:** REQ-REL-02
-- **Sources:** schema Category `structural`
+- **Sources:** schema Category `structural`; OQ-REL-01 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-REL-005: Assign a part to a child of a structural category
 - **Priority:** P2
@@ -131,13 +131,13 @@ Covers the links between parts and other records: category assignment, default s
 ### API-REL-008: Category default location seen from a part
 - **Priority:** P3
 - **Type:** Positive
-- **Automation candidate:** Yes, after OQ-REL-02
-- **Preconditions:** A test-owned stock location `L`; a test-owned category `C` with `default_location: <L id>`; a test-owned part in `C` with no `default_location`.
-- **Request:** `GET /api/part/{id}/`
+- **Automation candidate:** Yes
+- **Preconditions:** A test-owned stock location `L`; a test-owned category `C` with `default_location: <L id>`; a test-owned category `D` under `C` with no `default_location`; one test-owned part in each, with no `default_location` of its own.
+- **Request:** `GET /api/part/{id}/` for each part.
 - **Expected status:** 200
-- **Expected business result:** See OQ-REL-02.
+- **Expected business result:** The part in `C` has `category_default_location` = `L`. The part in `D` has `category_default_location` = `null`: the value comes from the part's own category only and is not inherited from a parent. Neither part's own `default_location` is set.
 - **Requirements:** REQ-REL-03
-- **Sources:** schema Part `category_default_location`, Category `default_location`
+- **Sources:** schema Part `category_default_location`, Category `default_location`; OQ-REL-02 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Supplier Linkage
 
@@ -166,24 +166,26 @@ Covers the links between parts and other records: category assignment, default s
 ### API-REL-011: Link a supplier part to a non-purchaseable part
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-REL-03
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned supplier company and a test-owned part with `purchaseable: false`.
-- **Request:** `POST /api/company/part/` with the part, the supplier, and a unique `SKU`.
-- **Expected status:** See OQ-REL-03.
-- **Expected business result:** See OQ-REL-03.
+- **Request:** `POST /api/company/part/` with the part, the supplier, and a unique `SKU`; then `GET /api/company/part/?supplier=<supplier id>&limit=<n>`.
+- **Expected status:** 400, then 200.
+- **Expected business result:** The error body has a `part` key, and the test-owned supplier has no supplier parts (`count` 0). (`GET /api/company/part/?part=<id>` cannot be used here: it also returns 400 for a non-purchaseable part.)
 - **Requirements:** REQ-REL-04
-- **Sources:** schema `POST /api/company/part/`; `docs:part/#purchaseable`
+- **Sources:** schema `POST /api/company/part/`; `docs:part/#purchaseable`; OQ-REL-03 (local 1.6.3, confirmed by user, 2026-10-31)
+- **Finding (minor, confirmed by user 2026-10-31):** the error text is `Invalid pk "<id>" - object does not exist.`, although the part exists. It points the user to the wrong cause. The text is not asserted.
 
 ### API-REL-012: Link a supplier part to a company that is not a supplier
 - **Priority:** P3
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-REL-04
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned company with `is_supplier: false`, and a test-owned purchaseable part.
-- **Request:** `POST /api/company/part/` with the part, the company as `supplier`, and a unique `SKU`.
-- **Expected status:** See OQ-REL-04.
-- **Expected business result:** See OQ-REL-04.
+- **Request:** `POST /api/company/part/` with the part, the company as `supplier`, and a unique `SKU`; then `GET /api/company/part/?part=<id>&limit=<n>`.
+- **Expected status:** 400, then 200.
+- **Expected business result:** The error body has a `supplier` key, and the part has no supplier parts (`count` 0).
 - **Requirements:** REQ-REL-05
-- **Sources:** schema Company `is_supplier`, `POST /api/company/part/`
+- **Sources:** schema Company `is_supplier`, `POST /api/company/part/`; OQ-REL-04 (local 1.6.3, confirmed by user, 2026-10-31)
+- **Finding (minor, confirmed by user 2026-10-31):** same misleading `Invalid pk "<id>" - object does not exist.` text as API-REL-011, although the company exists. The text is not asserted.
 
 ### API-REL-013: Link a supplier part to a manufacturer part
 - **Priority:** P3
@@ -210,13 +212,13 @@ Covers the links between parts and other records: category assignment, default s
 ### API-REL-015: Delete a part that has a supplier part
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-REL-05
-- **Preconditions:** A test-owned inactive part (OQ-PART-02) with one test-owned supplier part.
-- **Request:** `DELETE /api/part/{id}/`, then `GET /api/company/part/?part=<id>&limit=<n>` and `GET /api/company/part/{supplier part id}/`.
-- **Expected status:** See OQ-REL-05.
-- **Expected business result:** See OQ-REL-05. No records other than the test-owned ones change.
+- **Automation candidate:** Yes
+- **Preconditions:** A test-owned inactive part (OQ-PART-02) with one test-owned supplier part from a test-owned supplier company.
+- **Request:** `DELETE /api/part/{id}/`, then `GET /api/company/part/{supplier part id}/` and `GET /api/company/{supplier id}/`.
+- **Expected status:** 204, then 404 for the supplier part and 200 for the company.
+- **Expected business result:** The part's supplier parts are deleted with it (cascade); the supplier company is kept. No records other than the test-owned ones change.
 - **Requirements:** REQ-REL-05
-- **Sources:** schema `DELETE /api/part/{id}/`, `GET /api/company/part/{id}/`
+- **Sources:** schema `DELETE /api/part/{id}/`, `GET /api/company/part/{id}/`; OQ-REL-05 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Coverage
 
@@ -233,8 +235,8 @@ All 8 requirements are covered by at least one case.
 
 | ID | Question | Affects | Status |
 |---|---|---|---|
-| OQ-REL-01 | Which status is returned when a part is assigned to a structural category? The schema describes the rule but documents only success responses. | API-REL-004 | Open |
-| OQ-REL-02 | Is a part's `category_default_location` the `default_location` of its category, and is it inherited from a parent category? The field has no description. | API-REL-008 | Open |
-| OQ-REL-03 | Can a supplier part be linked to a part with `purchaseable: false`? The documentation says the flag "allows" linking but not that it is required. | API-REL-011 | Open |
-| OQ-REL-04 | Is a supplier part rejected when its `supplier` company has `is_supplier: false`, and with which status? | API-REL-012 | Open |
-| OQ-REL-05 | When a part with supplier parts is deleted, are the supplier parts deleted too, or is the delete rejected? The schema documents only 204. | API-REL-015 | Open |
+| OQ-REL-01 | Which status is returned when a part is assigned to a structural category? The schema describes the rule but documents only success responses. | API-REL-004 | Resolved: 400 `{"category": ["Parts cannot be assigned to structural part categories!"]}` for both create and move; nothing changes. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-REL-02 | Is a part's `category_default_location` the `default_location` of its category, and is it inherited from a parent category? The field has no description. | API-REL-008 | Resolved: `category_default_location` is the `default_location` of the part's own category only; a child category without its own default gives `null` (not inherited). The part's own `default_location` is not filled. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-REL-03 | Can a supplier part be linked to a part with `purchaseable: false`? The documentation says the flag "allows" linking but not that it is required. | API-REL-011 | Resolved: rejected with 400 and a `part` error; no supplier part is created. The message (`Invalid pk "<id>" - object does not exist.`) is misleading because the part exists; recorded as a minor application finding. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-REL-04 | Is a supplier part rejected when its `supplier` company has `is_supplier: false`, and with which status? | API-REL-012 | Resolved: rejected with 400 and a `supplier` error; no supplier part is created. Same misleading "object does not exist" message as OQ-REL-03 (minor application finding). Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-REL-05 | When a part with supplier parts is deleted, are the supplier parts deleted too, or is the delete rejected? The schema documents only 204. | API-REL-015 | Resolved: the delete returns 204 and cascades to the part's supplier parts (404 afterwards); the supplier company is kept. Local 1.6.3, confirmed by user (2026-10-31). |

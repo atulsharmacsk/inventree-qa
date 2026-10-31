@@ -195,13 +195,19 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-011: Delete a locked part while locking is enabled
 - **Priority:** P1
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-04
-- **Preconditions:** Part locking (`PART_ENABLE_LOCKING`) is enabled; restore the original value afterwards. A test-owned inactive part (see OQ-PART-02) with `locked: true`.
-- **Request:** `DELETE /api/part/{id}/`, then `GET /api/part/{id}/`.
-- **Expected status:** See OQ-EDGE-04 for the `DELETE`; 200 for the `GET`.
-- **Expected business result:** The part is not deleted and is still `locked`.
+- **Automation candidate:** Yes
+- **Preconditions:** Part locking (`PART_ENABLE_LOCKING`) is enabled; restore the original value afterwards. One test-owned part with `locked: true` per row.
+- **Request:** For each row, `DELETE /api/part/{id}/`, then `GET /api/part/{id}/`.
+
+  | Part state |
+  |---|
+  | Locked and active |
+  | Locked and inactive (so the active-part rule in OQ-PART-02 does not apply) |
+
+- **Expected status:** 400 for the `DELETE`; 200 for the `GET`.
+- **Expected business result:** The error body has a `non_field_errors` key (local 1.6.3: `["Cannot delete this part as it is locked"]`). The part is not deleted and is still `locked`.
 - **Requirements:** REQ-EDGE-05
-- **Sources:** schema `DELETE /api/part/{id}/`, Part `locked`; `docs:part/#locked-parts`
+- **Sources:** schema `DELETE /api/part/{id}/`, Part `locked`; `docs:part/#locked-parts`; OQ-EDGE-04 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### API-EDGE-012: Delete a locked part while locking is disabled
 - **Priority:** P2
@@ -217,35 +223,48 @@ Also checked: the root `README.md` (correction log entry on a revoked token retu
 ### API-EDGE-013: Edit a locked part's fields
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-05
+- **Automation candidate:** Yes
 - **Preconditions:** Part locking (`PART_ENABLE_LOCKING`) is enabled; restore the original value afterwards. A test-owned part with `locked: true` and a known `description`.
 - **Request:** `PATCH /api/part/{id}/` with a new `description`, then `GET /api/part/{id}/`.
-- **Expected status:** See OQ-EDGE-05.
-- **Expected business result:** See OQ-EDGE-05.
+- **Expected status:** 200, then 200.
+- **Expected business result:** The new `description` is stored, and the part is still `locked`. Locking restricts delete, BOM, and parameters (`docs:part/#locked-parts`), not the part's own fields.
 - **Requirements:** REQ-EDGE-05
-- **Sources:** schema Part `locked`, `PATCH /api/part/{id}/`; `docs:part/#locked-parts`
+- **Sources:** schema Part `locked`, `PATCH /api/part/{id}/`; `docs:part/#locked-parts`; OQ-EDGE-05 (local 1.6.3, confirmed by user, 2026-10-31; the schema description "Locked parts cannot be edited" is a documentation defect)
 
 ### API-EDGE-014: Create a part with an IPN that is already used
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-CREATE-08
-- **Preconditions:** The duplicate IPN setting is in its default state (setting name and default: see OQ-CREATE-08). A test-owned part `A` with a unique IPN.
+- **Automation candidate:** Yes for the duplicates-allowed row; the duplicates-not-allowed row after OQ-CREATE-08
+- **Preconditions:** A test-owned part `A` with a unique IPN. The duplicate IPN setting (`PART_ALLOW_DUPLICATE_IPN`) is in the row's state; tests do not change global settings, so each row runs only on an instance already in that state.
 - **Request:** `POST /api/part/` with a different unique `name` and the same `IPN` as `A`, then `GET /api/part/?IPN=<IPN>&limit=<n>`.
-- **Expected status:** See OQ-CREATE-08.
-- **Expected business result:** See OQ-CREATE-08. `A` is unchanged in either case.
+
+  | `PART_ALLOW_DUPLICATE_IPN` | Expected |
+  |---|---|
+  | On (local 1.6.3) | 201; the IPN search lists both `A` and the new part |
+  | Off | See OQ-CREATE-08 (not yet observed) |
+
+- **Expected status:** As in the table.
+- **Expected business result:** As in the table. `A` is unchanged in every row.
 - **Requirements:** REQ-EDGE-03
-- **Sources:** schema `POST /api/part/`, `GET /api/part/` `IPN` filter; OQ-CREATE-08 in [ui/part-creation.md](../ui/part-creation.md)
+- **Sources:** schema `POST /api/part/`, `GET /api/part/` `IPN` filter; OQ-CREATE-08 in [ui/part-creation.md](../ui/part-creation.md) (duplicates-allowed row confirmed by user on local 1.6.3, 2026-10-31)
 
 ### API-EDGE-015: Create a category with a name already used under the same parent
 - **Priority:** P3
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-EDGE-06
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned category `P` with a test-owned child `C`.
-- **Request:** `POST /api/part/category/` with `name` equal to `C`'s name and `parent: <P id>`, then `GET /api/part/category/?parent=<P id>&limit=<n>`.
-- **Expected status:** See OQ-EDGE-06.
-- **Expected business result:** See OQ-EDGE-06. `C` is unchanged in either case.
+- **Request:** For each row, `POST /api/part/category/` with the row's `name` and `parent`, then `GET /api/part/category/?parent=<P id>&limit=<n>`.
+
+  | `name` | `parent` | Expected |
+  |---|---|---|
+  | `C`'s name | `P` | 400, with a `non_field_errors` key (local 1.6.3: `["Duplicate names cannot exist under the same parent"]`); not created |
+  | `C`'s name | none (top level) | 201 |
+  | `C`'s name in upper case | `P` | 201 (the check is case-sensitive) |
+
+- **Expected status:** As in the table.
+- **Expected business result:** As in the table. `C` is unchanged in every row.
 - **Requirements:** REQ-EDGE-03
-- **Sources:** schema `POST /api/part/category/`, `GET /api/part/category/` `parent` filter
+- **Sources:** schema `POST /api/part/category/`, `GET /api/part/category/` `parent` filter; OQ-EDGE-06 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Coverage
 
@@ -265,6 +284,6 @@ All 5 requirements are covered by at least one case.
 | OQ-EDGE-01 | Which status is returned for requests with no credentials, an unknown or badly formed token, or a revoked token: 401 or 403? The documentation says users must be authenticated but gives no status; the schema lists only success responses. An earlier local run (README correction log) returned 401 "Token has been revoked" for a revoked token; not yet confirmed by the user. | API-EDGE-001, 002, 003, 004 | Resolved: 401 with `{"detail": ...}` for no credentials, an unknown token, a token without the `Token` prefix, an empty token, and a revoked token. Local 1.6.3, confirmed by user (2026-10-30). |
 | OQ-EDGE-02 | Which status and error body are returned for a malformed JSON body, a wrong-typed value, or a reference to a record that does not exist? The schema documents only success responses. | API-EDGE-007, 008, 009 | Resolved: a wrong-typed value or a reference to a record that does not exist returns 400 (API-EDGE-008, 009), and 400 is the expected status for a malformed JSON body (API-EDGE-007). Local 1.6.3, confirmed by user (2026-10-30). **Application finding:** a malformed JSON body returned 500 (`{"error": "AttributeError", ...}`) instead of 400, so API-EDGE-007 is `fixme` and fails against the current build. |
 | OQ-EDGE-03 | Which status is returned for a method the endpoint does not list, such as `DELETE /api/part/`? | API-EDGE-010 | Resolved: 405 `Method "DELETE" not allowed.`. Local 1.6.3, confirmed by user (2026-10-30). |
-| OQ-EDGE-04 | Which status is returned when deleting a locked part with locking enabled? The documentation says it cannot be deleted but gives no status. | API-EDGE-011 | Open |
-| OQ-EDGE-05 | Can the fields of a locked part be edited? The schema describes `locked` as "Locked parts cannot be edited", but `docs:part/#locked-parts` lists only delete, BOM, and parameter restrictions. | API-EDGE-013 | Open |
-| OQ-EDGE-06 | Are duplicate category names under the same parent rejected, and with which status? Neither the schema nor the documentation states a uniqueness rule. | API-EDGE-015 | Open |
+| OQ-EDGE-04 | Which status is returned when deleting a locked part with locking enabled? The documentation says it cannot be deleted but gives no status. | API-EDGE-011 | Resolved: 400 `{"non_field_errors": ["Cannot delete this part as it is locked"]}`, for active and inactive locked parts; the part is kept. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-EDGE-05 | Can the fields of a locked part be edited? The schema describes `locked` as "Locked parts cannot be edited", but `docs:part/#locked-parts` lists only delete, BOM, and parameter restrictions. | API-EDGE-013 | Resolved: intended behaviour. `PATCH` and `PUT` on a locked part return 200 and store the changes; the part stays locked. The schema description "Locked parts cannot be edited" is recorded as a schema documentation defect. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-EDGE-06 | Are duplicate category names under the same parent rejected, and with which status? Neither the schema nor the documentation states a uniqueness rule. | API-EDGE-015 | Resolved: 400 `{"non_field_errors": ["Duplicate names cannot exist under the same parent"]}` for the same name under the same parent; the same name under another parent, or in different letter case, is accepted (201). Local 1.6.3, confirmed by user (2026-10-31). |

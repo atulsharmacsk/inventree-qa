@@ -81,7 +81,32 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test.fixme('API-REL-004: assign a part to a structural category (blocked by OQ-REL-01)', async () => {});
+    // OQ-REL-01 (confirmed by the user): both create and move are rejected with a `category` error.
+    test('API-REL-004: assign a part to a structural category', async ({ parts, categories }) => {
+      const { structural, part } = await test.step('Setup: a structural category S and a part P with no category', async () => {
+        return {
+          structural: await categories.createOrFail(newCategory({ structural: true })),
+          part: await parts.createOrFail(newPart()),
+        };
+      });
+      const name = uniqueName('pw-part');
+
+      const createResponse = await test.step('POST /api/part/ with category S', async () => {
+        return await parts.create(newPart({ name, category: structural.pk }));
+      });
+      const moveResponse = await test.step('PATCH /api/part/{P}/ with category S', async () => {
+        return await parts.update(part.pk, { category: structural.pk });
+      });
+
+      await test.step('Check both return 400 with a category error, no part is in S, and P has no category', async () => {
+        expect(createResponse.status()).toBe(400);
+        expect(await createResponse.json()).toHaveProperty('category');
+        expect(moveResponse.status()).toBe(400);
+        expect(await moveResponse.json()).toHaveProperty('category');
+        await expectPartsListed(await parts.listFiltered({ category: structural.pk }), []);
+        expect((await parts.getOrFail(part.pk)).category).toBeNull();
+      });
+    });
 
     test('API-REL-005: assign a part to a child of a structural category', async ({ parts, categories }) => {
       const child = await test.step('Setup: a structural category with a non-structural child', async () => {
@@ -139,7 +164,31 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test.fixme('API-REL-008: category default location seen from a part (blocked by OQ-REL-02)', async () => {});
+    // OQ-REL-02 (confirmed by the user): only the part's own category counts; a parent's default is not inherited.
+    test('API-REL-008: category default location seen from a part', async ({ stockLocations, categories, parts }) => {
+      const { location, inCategory, inChild } = await test.step('Setup: location L, category C with default L, child D without one, a part in each', async () => {
+        const location = await stockLocations.createOrFail(newStockLocation());
+        const category = await categories.createOrFail(newCategory({ default_location: location.pk }));
+        const child = await categories.createOrFail(newCategory({ parent: category.pk }));
+        return {
+          location,
+          inCategory: await parts.createOrFail(newPart({ category: category.pk })),
+          inChild: await parts.createOrFail(newPart({ category: child.pk })),
+        };
+      });
+
+      await test.step('GET /api/part/{id}/ for the part in C shows L and no own default_location', async () => {
+        const stored = await parts.getOrFail(inCategory.pk);
+        expect(stored.category_default_location).toBe(location.pk);
+        expect(stored.default_location).toBeNull();
+      });
+
+      await test.step('GET /api/part/{id}/ for the part in D shows null (not inherited from C)', async () => {
+        const stored = await parts.getOrFail(inChild.pk);
+        expect(stored.category_default_location).toBeNull();
+        expect(stored.default_location).toBeNull();
+      });
+    });
   });
 
   test.describe('Supplier linkage', () => {
@@ -194,8 +243,45 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test.fixme('API-REL-011: link a supplier part to a non-purchaseable part (blocked by OQ-REL-03)', async () => {});
-    test.fixme('API-REL-012: link a supplier part to a company that is not a supplier (blocked by OQ-REL-04)', async () => {});
+    // OQ-REL-03 (confirmed by the user): rejected on `part`; the "object does not exist" wording is a minor finding, so it is not asserted.
+    test('API-REL-011: link a supplier part to a non-purchaseable part', async ({ parts, companies, supplierParts }) => {
+      const { part, supplier } = await test.step('Setup: a supplier company and a part with purchaseable=false', async () => {
+        return {
+          supplier: await companies.createOrFail(newCompany({ is_supplier: true })),
+          part: await parts.createOrFail(newPart({ purchaseable: false })),
+        };
+      });
+
+      const response = await test.step('POST /api/company/part/ with part, supplier, and SKU', async () => {
+        return await supplierParts.create(newSupplierPart(part.pk, supplier.pk));
+      });
+
+      await test.step('Check 400 with a part error and the test-owned supplier has no supplier parts', async () => {
+        expect(response.status()).toBe(400);
+        expect(await response.json()).toHaveProperty('part');
+        // `?part=` also rejects a non-purchaseable part with 400, so the check goes through the test-owned supplier.
+        expect((await supplierParts.listOrFail({ supplier: supplier.pk })).count).toBe(0);
+      });
+    });
+    // OQ-REL-04 (confirmed by the user): rejected on `supplier`; same misleading wording as OQ-REL-03, not asserted.
+    test('API-REL-012: link a supplier part to a company that is not a supplier', async ({ parts, companies, supplierParts }) => {
+      const { part, company } = await test.step('Setup: a company with is_supplier=false and a purchaseable part', async () => {
+        return {
+          company: await companies.createOrFail(newCompany({ is_supplier: false })),
+          part: await parts.createOrFail(newPart({ purchaseable: true })),
+        };
+      });
+
+      const response = await test.step('POST /api/company/part/ with the company as supplier', async () => {
+        return await supplierParts.create(newSupplierPart(part.pk, company.pk));
+      });
+
+      await test.step('Check 400 with a supplier error and the part has no supplier parts', async () => {
+        expect(response.status()).toBe(400);
+        expect(await response.json()).toHaveProperty('supplier');
+        expect((await supplierParts.listOrFail({ part: part.pk })).count).toBe(0);
+      });
+    });
 
     test('API-REL-013: link a supplier part to a manufacturer part', async ({ parts, companies, manufacturerParts, supplierParts }) => {
       const { part, manufacturer, supplier } = await test.step('Setup: a purchaseable part, a manufacturer, and a supplier', async () => {
@@ -251,6 +337,25 @@ test.describe('Relational integrity', () => {
       }
     });
 
-    test.fixme('API-REL-015: delete a part that has a supplier part (blocked by OQ-REL-05)', async () => {});
+    // OQ-REL-05 (confirmed by the user): the part's supplier parts are deleted with it; the supplier company stays.
+    test('API-REL-015: delete a part that has a supplier part', async ({ parts, companies, supplierParts }) => {
+      const { part, supplier, supplierPart } = await test.step('Setup: an inactive purchaseable part with one supplier part', async () => {
+        const supplier = await companies.createOrFail(newCompany({ is_supplier: true }));
+        const part = await parts.createOrFail(newPart({ purchaseable: true }));
+        const supplierPart = await supplierParts.createOrFail(newSupplierPart(part.pk, supplier.pk));
+        expect((await parts.update(part.pk, { active: false })).status()).toBe(200);
+        return { part, supplier, supplierPart };
+      });
+
+      const response = await test.step('DELETE /api/part/{id}/', async () => {
+        return await parts.delete(part.pk);
+      });
+
+      await test.step('Check 204, the supplier part is gone (404), and the supplier company still exists', async () => {
+        expect(response.status()).toBe(204);
+        expect((await supplierParts.get(supplierPart.pk)).status()).toBe(404);
+        expect((await companies.get(supplier.pk)).status()).toBe(200);
+      });
+    });
   });
 });

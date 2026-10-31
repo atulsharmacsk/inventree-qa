@@ -1,4 +1,5 @@
 import { expectPartsListed } from '../src/checks';
+import type { Part } from '../../shared/models';
 import { newCategory, newPart, newStockLocation, uniqueName } from '../src/test-data';
 import { expect, test } from './fixtures';
 
@@ -168,7 +169,25 @@ test.describe('Edge cases', () => {
   });
 
   test.describe('Conflict scenarios', () => {
-    test.fixme('API-EDGE-011: delete a locked part while locking is enabled (blocked by OQ-EDGE-04)', async () => {});
+    // OQ-EDGE-04 (confirmed by the user): the lock blocks a delete even when the part is inactive.
+    // Assumes PART_ENABLE_LOCKING is enabled, as on the local instance; tests never change global settings.
+    for (const active of [true, false]) {
+      test(`API-EDGE-011: delete a locked ${active ? 'active' : 'inactive'} part while locking is enabled`, async ({ parts }) => {
+        const part = await test.step(`Setup: POST /api/part/ with locked=true and active=${active}`, async () => {
+          return await parts.createOrFail(newPart({ locked: true, active }));
+        });
+
+        const response = await test.step('DELETE /api/part/{id}/', async () => {
+          return await parts.delete(part.pk);
+        });
+
+        await test.step('Check 400 with non_field_errors, and the part still exists and is locked', async () => {
+          expect(response.status()).toBe(400);
+          expect(await response.json()).toHaveProperty('non_field_errors');
+          expect((await parts.getOrFail(part.pk)).locked).toBe(true);
+        });
+      });
+    }
 
     // Skipped, not deleted: the body is ready to run once an instance has part locking (PART_ENABLE_LOCKING) disabled.
     // Tests never change global settings, and locking is enabled on the local instance.
@@ -187,8 +206,74 @@ test.describe('Edge cases', () => {
       });
     });
 
-    test.fixme('API-EDGE-013: edit a locked part\'s fields (blocked by OQ-EDGE-05)', async () => {});
-    test.fixme('API-EDGE-014: create a part with an IPN that is already used (blocked by OQ-CREATE-08)', async () => {});
-    test.fixme('API-EDGE-015: create a category with a name already used under the same parent (blocked by OQ-EDGE-06)', async () => {});
+    // OQ-EDGE-05 (confirmed by the user): locking blocks delete, BOM, and parameters, not field edits; the schema text is a documentation defect.
+    test('API-EDGE-013: edit a locked part\'s fields', async ({ parts }) => {
+      const part = await test.step('Setup: POST /api/part/ with locked=true and a known description', async () => {
+        return await parts.createOrFail(newPart({ locked: true, description: 'Original description' }));
+      });
+
+      const response = await test.step('PATCH /api/part/{id}/ with a new description', async () => {
+        return await parts.update(part.pk, { description: 'Edited while locked' });
+      });
+
+      await test.step('Check 200, the new description is stored, and the part is still locked', async () => {
+        expect(response.status()).toBe(200);
+        const stored = await parts.getOrFail(part.pk);
+        expect(stored.description).toBe('Edited while locked');
+        expect(stored.locked).toBe(true);
+      });
+    });
+    // OQ-CREATE-08 (partly confirmed): PART_ALLOW_DUPLICATE_IPN is on locally; tests never change global settings.
+    test('API-EDGE-014: create a part with an IPN that is already used, duplicates allowed', async ({ parts }) => {
+      const ipn = uniqueName('PW-IPN');
+      const original = await test.step('Setup: part A with a unique IPN', async () => {
+        return await parts.createOrFail(newPart({ IPN: ipn }));
+      });
+
+      const response = await test.step('POST /api/part/ with a new name and the same IPN', async () => {
+        return await parts.create(newPart({ IPN: ipn }));
+      });
+
+      await test.step('Check 201, the IPN search lists both parts, and A is unchanged', async () => {
+        expect(response.status()).toBe(201);
+        const duplicate = (await response.json()) as Part;
+        await expectPartsListed(await parts.listFiltered({ IPN: ipn }), [original, duplicate]);
+        expect((await parts.getOrFail(original.pk)).name).toBe(original.name);
+      });
+    });
+
+    test.fixme('API-EDGE-014: create a part with an IPN that is already used, duplicates not allowed (blocked by OQ-CREATE-08; PART_ALLOW_DUPLICATE_IPN is on locally)', async () => {});
+    // OQ-EDGE-06 (confirmed by the user): names are unique per parent, compared case-sensitively.
+    const DUPLICATE_NAME_ROWS = [
+      { label: 'the same name under the same parent', underParent: true, upperCase: false, accepted: false },
+      { label: 'the same name at the top level', underParent: false, upperCase: false, accepted: true },
+      { label: 'the same name in upper case under the same parent', underParent: true, upperCase: true, accepted: true },
+    ];
+
+    for (const { label, underParent, upperCase, accepted } of DUPLICATE_NAME_ROWS) {
+      test(`API-EDGE-015: create a category with ${label}`, async ({ categories }) => {
+        const { parent, child } = await test.step('Setup: category P with child C', async () => {
+          const parent = await categories.createOrFail(newCategory());
+          const child = await categories.createOrFail(newCategory({ parent: parent.pk }));
+          return { parent, child };
+        });
+        const name = upperCase ? child.name.toUpperCase() : child.name;
+
+        const response = await test.step(`POST /api/part/category/ with ${label}`, async () => {
+          return await categories.createInvalid(underParent ? { name, parent: parent.pk } : { name });
+        });
+
+        await test.step(accepted ? 'Check 201' : 'Check 400 with non_field_errors and P still has only C', async () => {
+          if (accepted) {
+            expect(response.status()).toBe(201);
+          } else {
+            expect(response.status()).toBe(400);
+            expect(await response.json()).toHaveProperty('non_field_errors');
+            expect((await categories.listOrFail({ parent: parent.pk })).results.map((category) => category.pk)).toEqual([child.pk]);
+          }
+          expect((await categories.getOrFail(child.pk)).name).toBe(child.name);
+        });
+      });
+    }
   });
 });

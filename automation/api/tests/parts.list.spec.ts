@@ -76,7 +76,26 @@ test.describe('Parts list', () => {
       });
     });
 
-    test.fixme('API-LIST-003: offset beyond the last record (blocked by OQ-LIST-01)', async () => {});
+    test('API-LIST-003: offset beyond the last record', async ({ parts, categories }) => {
+      const category = await test.step('Setup: a category with three parts', async () => {
+        const category = await categories.createOrFail(newCategory());
+        for (let index = 0; index < 3; index++) await parts.createOrFail(newPart({ category: category.pk }));
+        return category;
+      });
+
+      const response = await test.step('GET /api/part/ with category, limit=2, and offset=10', async () => {
+        return await parts.listFiltered({ category: category.pk, limit: 2, offset: 10 });
+      });
+
+      await test.step('Check 200 with empty results, count 3, and next null', async () => {
+        expect(response.status()).toBe(200);
+        const body = (await response.json()) as PartList;
+        checkPartList(body);
+        expect(body.results).toEqual([]);
+        expect(body.count).toBe(3);
+        expect(body.next).toBeNull();
+      });
+    });
     // Application finding (OQ-LIST-02): without `limit` the server returns a bare array, not the documented paginated object.
     test.fixme('API-LIST-004: request without limit (application finding: the response is an unpaginated array)', async ({ parts, categories }) => {
       const category = await test.step('Setup: a category with one part', async () => {
@@ -318,11 +337,60 @@ test.describe('Parts list', () => {
       });
     });
 
-    test.fixme('API-LIST-014: filter by creation date (blocked by OQ-LIST-04)', async () => {});
+    // OQ-LIST-04 (confirmed by the user): both filters compare with creation_date and exclude the given day.
+    test('API-LIST-014: filter by creation date', async ({ parts, categories }) => {
+      const { category, part } = await test.step('Setup: a category with one part', async () => {
+        const category = await categories.createOrFail(newCategory());
+        return { category, part: await parts.createOrFail(newPart({ category: category.pk })) };
+      });
+      // Dates come from the server's creation_date, so the runner's time zone does not matter.
+      const shiftDays = (date: string, days: number): string => {
+        const shifted = new Date(`${date}T00:00:00Z`);
+        shifted.setUTCDate(shifted.getUTCDate() + days);
+        return shifted.toISOString().slice(0, 10);
+      };
+      const created = part.creation_date;
+      const rows: { filters: PartFilters; included: boolean }[] = [
+        { filters: { created_after: shiftDays(created, -1) }, included: true },
+        { filters: { created_after: created }, included: false },
+        { filters: { created_before: shiftDays(created, 1) }, included: true },
+        { filters: { created_before: created }, included: false },
+      ];
+
+      for (const { filters, included } of rows) {
+        await test.step(`GET /api/part/ with ${JSON.stringify(filters)} ${included ? 'includes' : 'excludes'} the part`, async () => {
+          await expectPartsListed(await parts.listFiltered({ category: category.pk, ...filters }), included ? [part] : []);
+        });
+      }
+    });
   });
 
   test.describe('Ordering and combination', () => {
-    test.fixme('API-LIST-015: order by name (blocked by OQ-LIST-03)', async () => {});
+    // OQ-LIST-03 (confirmed by the user): `name` and `-name` sort by name; unknown ordering fields are ignored.
+    for (const { ordering, expected } of [
+      { ordering: 'name', expected: ['a', 'b', 'c'] },
+      { ordering: '-name', expected: ['c', 'b', 'a'] },
+    ]) {
+      test(`API-LIST-015: order by ${ordering}`, async ({ parts, categories }) => {
+        const token = uniqueName('pw-list');
+        const category = await test.step('Setup: a category with parts <token>-b, <token>-a, <token>-c, created in that order', async () => {
+          const category = await categories.createOrFail(newCategory());
+          for (const suffix of ['b', 'a', 'c']) await parts.createOrFail(newPart({ category: category.pk, name: `${token}-${suffix}` }));
+          return category;
+        });
+
+        const response = await test.step(`GET /api/part/ with category and ordering=${ordering}`, async () => {
+          return await parts.listFiltered({ category: category.pk, ordering });
+        });
+
+        await test.step(`Check the parts come back as ${expected.join(', ')}`, async () => {
+          expect(response.status()).toBe(200);
+          const body = (await response.json()) as PartList;
+          checkPartList(body);
+          expect(body.results.map((part) => part.name)).toEqual(expected.map((suffix) => `${token}-${suffix}`));
+        });
+      });
+    }
 
     test('API-LIST-016: combined filters must all match', async ({ parts, categories }) => {
       const token = uniqueName('pw-list');

@@ -72,7 +72,7 @@ Covers creating, retrieving, updating, and deleting parts through the Part API. 
 ### API-PART-003: Create a part with initial stock
 - **Priority:** P2
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-PART-03
+- **Automation candidate:** Yes
 - **Preconditions:** A test-owned stock location.
 - **Request:** For each row, `POST /api/part/` with a unique `name` and `initial_stock: {"quantity": <q>, "location": <location id>}`, then `GET /api/part/{id}/`.
 
@@ -83,8 +83,8 @@ Covers creating, retrieving, updating, and deleting parts through the Part API. 
 - **Expected status:** 201 for each create; 200 for each retrieve.
 - **Expected business result:** The part's stock matches the table.
 - **Requirements:** REQ-APART-08, REQ-APART-11
-- **Sources:** schema InitialStock; `docs:part/create/#initial-stock`, `docs:part/#part-stock`
-- **Open question:** OQ-PART-03.
+- **Sources:** schema InitialStock; `docs:part/create/#initial-stock`, `docs:part/#part-stock`; OQ-PART-03 (local 1.6.3, confirmed by user, 2026-10-31)
+- **Open question:** OQ-PART-03 (resolved: the API applies `initial_stock` even when the *Initial Stock Data* setting is off).
 
 ### API-PART-004: Create a part by duplicating another part
 - **Priority:** P3
@@ -210,7 +210,7 @@ All 11 requirements are covered by at least one case.
 |---|---|---|---|
 | OQ-PART-01 | Which status is returned for a part ID that does not exist? The schema documents only success responses. | API-PART-011, API-PART-012 | Partly resolved: `GET` of a part ID that does not exist returns 404 `No Part matches the given query.` (local 1.6.3, confirmed by user, 2026-10-30). `PATCH` and `DELETE` on a missing part are not yet observed; API-PART-012 is not an automation candidate. |
 | OQ-PART-02 | Can an active part be deleted, or must it be made inactive first? The schema documents only 204; `docs:part/#active-parts` recommends marking obsolete parts inactive but states no restriction. | API-PART-011 | Resolved: intended behaviour. Deleting an active part returns 400 "Cannot delete this part as it is still active"; after `active=false` it returns 204. Local 1.6.3, confirmed by user (2026-10-30). |
-| OQ-PART-03 | Is `initial_stock` applied through the API when the *Initial Stock Data* setting is off? The documentation describes the setting only for the creation form. | API-PART-003 | Open |
+| OQ-PART-03 | Is `initial_stock` applied through the API when the *Initial Stock Data* setting is off? The documentation describes the setting only for the creation form. | API-PART-003 | Resolved: the API applies `initial_stock` whatever the *Initial Stock Data* setting (`PART_CREATE_INITIAL`, off on local 1.6.3): quantity 5 creates one stock item of 5 at the location; quantity 0 creates none. The setting only controls the creation form. Confirmed by user (2026-10-31). |
 | OQ-PART-04 | What does each detail flag add to the response? The schema gives no description for `category_detail`, `path_detail`, or `tags`. | API-PART-006 | Open |
 | OQ-PART-05 | How do `PATCH` and `PUT` on the list endpoint `/api/part/` select which parts to update? | Not covered | Open |
 | OQ-PART-06 | The schema lists `category_name` as required, but the response omits it for parts with no category. | API-PART-001, 005, 007, 009 | Resolved: intended behaviour; the schema marks every read-only field as required by default (drf-spectacular). Recorded as a schema documentation defect. Local 1.6.3, confirmed by user (2026-10-29). |

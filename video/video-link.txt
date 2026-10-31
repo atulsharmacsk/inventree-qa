@@ -1,0 +1,22 @@
+🎥 Assessment Demo Video
+
+Duration: 45 minutes
+Resolution: 1080p
+Format: MP4
+File size: 695 MB
+
+Download / View Demo Video - https://drive.google.com/file/d/1xaMSJtBxPdiNZpC489Cv0L7rsJVkzXpA/view?usp=drive_link
+
+📌 Video Navigation – Topics Covered
+00:15 – Quick Overview of Setup
+03:49 – Project Setup in VS Code
+Agentic Demos:
+15:26 – UI Manual Test Case Creation & Requirement Analysis
+19:34 – API Manual Test Case Creation
+24:04 – API Automation
+34:21 – UI Automation
+43:25 – Agentic Corrections & Summary
+
+Note: As I uploaded the video Friday(30/10- 4PM IST) depending upon time the link is accessed Google Drive may display 
+This video file is still being processed for playback. Please try again later with a download button.
+When you click on download, you may see a virus-scanning warning because of the file size. Please select Download anyway to access the video.

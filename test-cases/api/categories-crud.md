@@ -187,7 +187,7 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 ### API-CAT-013: Reject a circular parent
 - **Priority:** P2
 - **Type:** Negative
-- **Automation candidate:** Yes, after OQ-ACAT-02
+- **Automation candidate:** Yes
 - **Preconditions:** Test-owned category `A` with test-owned sub-category `B`.
 - **Request:** For each row, send the `PATCH`, then `GET /api/part/category/{A id}/`.
 
@@ -195,10 +195,10 @@ Covers creating, retrieving, updating, and deleting part categories through the 
   |---|---|
   | `PATCH /api/part/category/{A id}/` with `{"parent": <A id>}` | Category as its own parent |
   | `PATCH /api/part/category/{A id}/` with `{"parent": <B id>}` | Category under its own child |
-- **Expected status:** See OQ-ACAT-02.
-- **Expected business result:** See OQ-ACAT-02.
+- **Expected status:** 400 for each row.
+- **Expected business result:** The error body has a `parent` key (local 1.6.3 returns `{"parent": ["Invalid choice"]}`), and `A` keeps its original parent (none).
 - **Requirements:** REQ-ACAT-05, REQ-ACAT-09
-- **Sources:** schema `PATCH /api/part/category/{id}/`; `docs:part/#part-category`
+- **Sources:** schema `PATCH /api/part/category/{id}/`; `docs:part/#part-category`; OQ-ACAT-02 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Delete
 
@@ -217,13 +217,22 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 ### API-CAT-015: Delete a category that has a sub-category and a part
 - **Priority:** P1
 - **Type:** Boundary
-- **Automation candidate:** Yes, after OQ-ACAT-06
-- **Preconditions:** Test-owned category `A` with test-owned sub-category `B` and test-owned part `P` in `A`.
-- **Request:** `DELETE /api/part/category/{A id}/`, then `GET /api/part/category/{B id}/` and `GET /api/part/{P id}/`.
-- **Expected status:** See OQ-ACAT-06.
-- **Expected business result:** See OQ-ACAT-06. No data outside the test-owned records changes.
+- **Automation candidate:** Yes
+- **Preconditions:** Test-owned category `G`; test-owned category `T` under `G`; test-owned sub-category `C` under `T`; test-owned active part `X` in `T` and active part `Y` in `C`.
+- **Request:** For each row, `DELETE /api/part/category/{T id}/` with the row's flags, then `GET /api/part/category/{C id}/`, `GET /api/part/{X id}/`, and `GET /api/part/{Y id}/`.
+
+  | `delete_parts` | `delete_child_categories` | Sub-category `C` | Part `X` (in `T`) | Part `Y` (in `C`) |
+  |---|---|---|---|---|
+  | false | false | Kept, parent becomes `G` | Kept, category becomes `G` | Kept, stays in `C` |
+  | false | true | Deleted (404) | Kept, category becomes `G` | Kept, category becomes `G` |
+  | true | false | Kept, parent becomes `G` | Deleted (404) | Kept, stays in `C` |
+  | true | true | Deleted (404) | Deleted (404) | Deleted (404) |
+
+- **Expected status:** 204 for each `DELETE`; 404 or 200 for each `GET` as in the table.
+- **Expected business result:** As in the table: kept records move up to the deleted category's parent. No data outside the test-owned records changes.
 - **Requirements:** REQ-ACAT-07, REQ-ACAT-09
-- **Sources:** schema `DELETE /api/part/category/{id}/`
+- **Sources:** schema `DELETE /api/part/category/{id}/`; OQ-ACAT-06 (local 1.6.3, confirmed by user, 2026-10-31)
+- **Open question:** OQ-ACAT-07 (`delete_parts=true` deletes active parts).
 
 ### API-CAT-016: Operations on a category that does not exist
 - **Priority:** P2
@@ -253,8 +262,9 @@ All 10 requirements are covered by at least one case. REQ-ACAT-10 is covered onl
 | ID | Question | Affects | Status |
 |---|---|---|---|
 | OQ-ACAT-01 | Which status is returned for a category ID that does not exist? The schema documents only success responses. | API-CAT-016 | Resolved: 404 `No PartCategory matches the given query.` for `GET`, `PATCH`, and `DELETE`. Local 1.6.3, confirmed by user (2026-10-30). |
-| OQ-ACAT-02 | Is a circular parent (a category as its own parent, or under its own descendant) rejected, and with which status? The schema does not describe this validation. | API-CAT-013 | Open |
+| OQ-ACAT-02 | Is a circular parent (a category as its own parent, or under its own descendant) rejected, and with which status? The schema does not describe this validation. | API-CAT-013 | Resolved: 400 with a `parent` field error (`{"parent": ["Invalid choice"]}`) for both a self-parent and a parent under its own sub-category; the parent is unchanged. Local 1.6.3, confirmed by user (2026-10-31). |
 | OQ-ACAT-03 | Does `DELETE /api/part/category/{id}/` need a request body? The schema (API 561) documents no query parameters or request body, but on local 1.6.3 a `DELETE` without a body returns 400, because `delete_parts` and `delete_child_categories` are required in the body. | API-CAT-014 | Resolved as an application finding, confirmed by the user (2026-10-30): the API contract is incomplete. The schema omits a required request body. |
 | OQ-ACAT-04 | How do `PATCH` and `PUT` on the list endpoint `/api/part/category/` select which categories to update? | Not covered | Open |
 | OQ-ACAT-05 | What do `level`, `pathstring`, `path`, `subcategories`, and `path_detail` contain? The schema gives no description or format for them. | API-CAT-003, API-CAT-006, API-CAT-011 | Open |
-| OQ-ACAT-06 | What happens to the sub-categories and parts of a deleted category for each combination of `delete_parts` and `delete_child_categories`? Neither the schema nor the documentation describes the flags. | API-CAT-015 | Open |
+| OQ-ACAT-06 | What happens to the sub-categories and parts of a deleted category for each combination of `delete_parts` and `delete_child_categories`? Neither the schema nor the documentation describes the flags. | API-CAT-015 | Resolved: see the API-CAT-015 table. `delete_child_categories` deletes the whole sub-tree; `delete_parts` deletes the parts of every category being deleted; kept records move to the deleted category's parent. Every `DELETE` returns 204. Local 1.6.3, confirmed by user (2026-10-31). |
+| OQ-ACAT-07 | With `delete_parts=true`, deleting a category also deletes its **active** parts, but `DELETE /api/part/{id}/` rejects an active part with 400 (OQ-PART-02). Is this difference intended? Observed on local 1.6.3 (2026-10-31). | API-CAT-015 | Open |

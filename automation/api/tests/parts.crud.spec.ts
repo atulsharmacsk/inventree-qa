@@ -1,6 +1,6 @@
 import { checkPartList, checkPartShape, expectPartsListed } from '../src/checks';
-import { PART_FLAGS } from '../../shared/models';
-import { newCategory, newPart, uniqueName } from '../src/test-data';
+import { PART_FLAGS, type Part } from '../../shared/models';
+import { newCategory, newPart, newStockLocation, uniqueName } from '../src/test-data';
 import { expect, test } from './fixtures';
 
 // Manual cases: test-cases/api/parts-crud.md
@@ -50,7 +50,33 @@ test.describe('Parts CRUD', () => {
     });
   });
 
-  test.fixme('API-PART-003: create a part with initial stock (blocked by OQ-PART-03)', async () => {});
+  // OQ-PART-03 (confirmed by the user): the Initial Stock Data setting only affects the form; the API always applies initial_stock.
+  for (const quantity of [5, 0]) {
+    test(`API-PART-003: create a part with initial stock quantity ${quantity}`, async ({ stockLocations, parts, stockItems }) => {
+      const location = await test.step('Setup: a stock location', async () => {
+        return await stockLocations.createOrFail(newStockLocation());
+      });
+
+      const response = await test.step(`POST /api/part/ with initial_stock quantity=${quantity}`, async () => {
+        return await parts.create(newPart({ initial_stock: { quantity, location: location.pk } }));
+      });
+
+      const created = await test.step('Check POST returns 201', async () => {
+        expect(response.status()).toBe(201);
+        const body = (await response.json()) as Part;
+        stockItems.trackPart(body.pk);
+        return body;
+      });
+
+      await test.step(`Check total_in_stock is ${quantity} and the stock items match`, async () => {
+        const stored = (await (await parts.get(created.pk)).json()) as Record<string, unknown>;
+        expect(Number(stored.total_in_stock)).toBe(quantity);
+        const stock = await stockItems.listOrFail({ part: created.pk });
+        const expected = quantity > 0 ? [{ quantity, location: location.pk }] : [];
+        expect(stock.results.map((item) => ({ quantity: item.quantity, location: item.location }))).toEqual(expected);
+      });
+    });
+  }
 
   test('API-PART-005: get a part by ID', { tag: '@smoke' }, async ({ parts }) => {
     const partToCreate = newPart({ description: 'Created by API-PART-005', IPN: uniqueName('IPN') });
