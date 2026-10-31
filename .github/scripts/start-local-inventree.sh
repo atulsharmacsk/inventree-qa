@@ -72,6 +72,10 @@ for setting in PART_ENABLE_LOCKING=true PART_ALLOW_DUPLICATE_IPN=true PART_CREAT
     -d "{\"value\": \"${setting#*=}\"}" "http://localhost/api/settings/global/${setting%%=*}/" > /dev/null
 done
 
+# On a new database the first read of LOGIN_ENFORCE_MFA creates it, and its save hook ends every user session;
+# trigger that now, before the UI setup logs in, or the saved browser session is dropped mid-run.
+curl -fsS -u "$admin_user:$admin_password" http://localhost/api/settings/global/LOGIN_ENFORCE_MFA/ > /dev/null
+
 echo "InvenTree $(curl -fsS http://localhost/api/ | grep -o '"version":"[^"]*"') is up on http://localhost"
 
 # View-only READER through the REST API (the management shell skips the profile and owner records InvenTree needs).
