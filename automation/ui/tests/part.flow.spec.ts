@@ -59,6 +59,7 @@ test.describe('Cross-functional flow', () => {
     });
 
     await test.step('Check the Parameters tab lists the template with the entered value', async () => {
+      await partDetail.waitForTable('Parameters');
       const row = partDetail.tableRows('Parameters', template.name);
       await expect(row).toHaveCount(1);
       await expect(row).toContainText(value);
@@ -79,6 +80,7 @@ test.describe('Cross-functional flow', () => {
       // Local 1.6.3 opens the new stock item's page after submit, so return to the part.
       await partDetail.goto(created.pk);
       await partDetail.openTab('Stock');
+      await partDetail.waitForTable('Stock');
       const row = partDetail.tableRows('Stock', location.name);
       await expect(row).toHaveCount(1);
       await expect(row.getByRole('cell', { name: String(quantity), exact: true })).toBeVisible();

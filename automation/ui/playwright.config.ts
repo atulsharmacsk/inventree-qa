@@ -10,6 +10,8 @@ export default defineConfig({
   testDir: './tests',
   // The shared demo is slow: fixture setup alone (API token, test data) can take 18 s, and it counts toward the test timeout.
   timeout: 120_000,
+  // Tables show a spinner first, and the demo or a fresh CI instance can take several seconds to fill them.
+  expect: { timeout: 10_000 },
   // Redacts session cookies, CSRF tokens, auth headers, and the password before the HTML report copies traces.
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
@@ -26,6 +28,8 @@ export default defineConfig({
     baseURL: baseUrl(),
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Not redactable like traces; safe because tests log in through the API, never by typing the password in the browser.
+    video: 'retain-on-failure',
   },
   projects: [
     { name: 'setup', testMatch: /auth\.setup\.ts/ },

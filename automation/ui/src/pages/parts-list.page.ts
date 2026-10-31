@@ -43,6 +43,13 @@ export class PartsListPage {
 
   async search(text: string): Promise<void> {
     await this.searchInput.fill(text);
+    await this.waitForTable();
+  }
+
+  /** Waits until the parts table has finished fetching. */
+  async waitForTable(): Promise<void> {
+    // The Mantine DataTable spinner has no role or label; this class is present only while a fetch is running.
+    await this.page.locator('.mantine-datatable-loader-fetching').waitFor({ state: 'hidden' });
   }
 
   row(partName: string): Locator {

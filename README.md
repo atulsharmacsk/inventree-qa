@@ -24,7 +24,7 @@ Run the API checks with `npm run test:api` and the UI checks with `npm run test:
 
 Parallelism and retries are set per run with environment variables (also the CI build parameters): `WORKERS` (a number such as `4`, or a percentage such as `50%`; default UI `1`, API Playwright default locally; CI sets `2` through the workflow) and `RETRIES` (default `0` locally; CI sets `2` through the workflow). An invalid value stops the run. For example, in PowerShell: `$env:WORKERS='4'; $env:RETRIES='1'; npm run test:api`.
 
-Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate`, then `npm run allure:open`, which serves it on `127.0.0.1`). `allurerc.mjs` builds a single self-contained `index.html`, so a downloaded CI artifact also opens directly from disk. The UI project takes a screenshot on failure (`screenshot: 'only-on-failure'`), and both reports include it with the redacted trace. API tests have no browser, so they produce no screenshots.
+Reports: Playwright HTML (`npm run report`) and Allure (`npm run allure:generate`, then `npm run allure:open`, which serves it on `127.0.0.1`). `allurerc.mjs` builds a single self-contained `index.html`, so a downloaded CI artifact also opens directly from disk. The UI project keeps a screenshot and a video of each failed test (`screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`), and both reports include them with the redacted trace. Videos cannot be redacted like traces; they are safe because tests log in through the API and never type a password in the browser. API tests have no browser, so they produce no screenshots or videos.
 
 ## Continuous Integration
 
