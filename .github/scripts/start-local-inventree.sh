@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Starts a throwaway InvenTree on http://localhost for ENV=LOCALHOST CI runs, using InvenTree's own docker compose recipe.
-# Exports LOCAL_SUPERUSER_* and LOCAL_READER_* credentials (generated and masked per run) and INVENTREE_COMPOSE_DIR to later steps.
+# Exports LOCAL_SUPERUSER_*, LOCAL_READER_*, and LOCAL_ENGINEER_* credentials (generated and masked per run) and INVENTREE_COMPOSE_DIR to later steps.
 set -euo pipefail
 
 version="${INVENTREE_VERSION:?Set INVENTREE_VERSION, for example 1.6.3}"
@@ -97,10 +97,34 @@ if [ "$(curl -s -o /dev/null -w '%{http_code}' -u "$reader_user:$reader_password
   exit 1
 fi
 
+# Non-staff ENGINEER: Part view/add/change, view on categories, locations, and stock (matches the local "Part editors" group).
+engineer_user="ci-engineer"
+engineer_password="$(openssl rand -hex 16)"
+echo "::add-mask::$engineer_password"
+engineer_group_id="$(api -X POST -d '{"name": "ci-part-editors"}' http://localhost/api/user/group/ | jq -r .pk)"
+api "http://localhost/api/user/ruleset/?group=$engineer_group_id&limit=50" | jq -c '.results[]' | while read -r ruleset; do
+  case "$(jq -r .name <<< "$ruleset")" in
+    part) perms='{"can_view": true, "can_add": true, "can_change": true, "can_delete": false}' ;;
+    part_category|stock_location|stock) perms='{"can_view": true, "can_add": false, "can_change": false, "can_delete": false}' ;;
+    *) perms='{"can_view": false, "can_add": false, "can_change": false, "can_delete": false}' ;;
+  esac
+  api -X PATCH -d "$perms" "http://localhost/api/user/ruleset/$(jq -r .pk <<< "$ruleset")/" > /dev/null
+done
+engineer_id="$(api -X POST -d "{\"username\": \"$engineer_user\", \"first_name\": \"CI\", \"last_name\": \"Engineer\", \"email\": \"ci-engineer@example.com\", \"group_ids\": [$engineer_group_id], \"is_staff\": false, \"is_superuser\": false, \"is_active\": true}" \
+  http://localhost/api/user/ | jq -r .pk)"
+api -X PUT -d "{\"password\": \"$engineer_password\", \"override_warning\": true}" \
+  "http://localhost/api/user/$engineer_id/set-password/" > /dev/null
+if ! curl -fsS -u "$engineer_user:$engineer_password" http://localhost/api/user/me/roles/ | jq -e '.roles.part | index("add") and index("change")' > /dev/null; then
+  echo "::error::The CI engineer user does not have Part add and change permissions"
+  exit 1
+fi
+
 {
   echo "LOCAL_SUPERUSER_USERNAME=$admin_user"
   echo "LOCAL_SUPERUSER_PASSWORD=$admin_password"
   echo "LOCAL_READER_USERNAME=$reader_user"
   echo "LOCAL_READER_PASSWORD=$reader_password"
+  echo "LOCAL_ENGINEER_USERNAME=$engineer_user"
+  echo "LOCAL_ENGINEER_PASSWORD=$engineer_password"
   echo "INVENTREE_COMPOSE_DIR=$dir"
 } >> "$GITHUB_ENV"

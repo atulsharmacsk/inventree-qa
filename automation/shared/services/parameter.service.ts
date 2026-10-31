@@ -2,6 +2,7 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { deleteWithRetry } from '../cleanup';
 import {
   DEFAULT_PAGE_LIMIT,
+  type NewParameter,
   type NewParameterTemplate,
   type Page,
   type Parameter,
@@ -39,6 +40,15 @@ export class ParameterService {
       throw new Error(`Could not create parameter template: ${response.status()} ${await response.text()}`);
     }
     return (await response.json()) as ParameterTemplate;
+  }
+
+  /** For test setup: adds a parameter value to a record; it is deleted with its template. */
+  async createOrFail(parameter: NewParameter): Promise<Parameter> {
+    const response = await this.request.post('/api/parameter/', { data: parameter });
+    if (response.status() !== 201) {
+      throw new Error(`Could not create parameter: ${response.status()} ${await response.text()}`);
+    }
+    return (await response.json()) as Parameter;
   }
 
   /** For test checks: lists parameters and stops the test if that fails. */

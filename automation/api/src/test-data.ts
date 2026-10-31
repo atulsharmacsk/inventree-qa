@@ -15,7 +15,11 @@ export function newSupplierPart(part: number, supplier: number, extraFields: Par
 }
 
 /** A manufacturer part linking `part` to `manufacturer`, with a unique MPN. */
-export function newManufacturerPart(part: number, manufacturer: number, extraFields: Partial<NewManufacturerPart> = {}): NewManufacturerPart {
+export function newManufacturerPart(
+  part: number,
+  manufacturer: number,
+  extraFields: Partial<NewManufacturerPart> = {},
+): NewManufacturerPart {
   return { part, manufacturer, MPN: uniqueName('pw-mpn'), ...extraFields };
 }
 
@@ -65,7 +69,13 @@ export const CATEGORY_TEXT_LIMITS: TextLimit<'name' | 'description' | 'default_k
 ];
 
 /** Part fields the schema marks `writeOnly`; they must never appear in a response. */
-export const PART_WRITE_ONLY_FIELDS = ['copy_category_parameters', 'duplicate', 'existing_image', 'initial_stock', 'initial_supplier'] as const;
+export const PART_WRITE_ONLY_FIELDS = [
+  'copy_category_parameters',
+  'duplicate',
+  'existing_image',
+  'initial_stock',
+  'initial_supplier',
+] as const;
 
 /** A multi-byte character used to check that maxLength counts characters, not bytes. */
 export const MULTI_BYTE_CHARACTER = '部';

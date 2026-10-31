@@ -8,18 +8,29 @@
     "test:ui": "playwright test --project=ui",
     "typecheck": "tsc --noEmit",
     "lint:specs": "node ../shared/check-spec-layering.mjs tests",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "report": "playwright show-report",
     "allure:generate": "allure generate allure-results --output allure-report --clean",
     "allure:open": "allure open allure-report --host 127.0.0.1",
     "snapshot": "node scripts/snapshot.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "allure": "^3.22.1",
     "allure-playwright": "^3.14.0",
     "dotenv": "^18.0.9",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^17.13.0",
     "jszip": "^3.10.2",
-    "typescript": "^7.0.2"
+    "prettier": "^3.4.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.19.0"
   }
 }

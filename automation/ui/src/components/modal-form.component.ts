@@ -10,7 +10,11 @@ export class ModalFormComponent {
   readonly cancelButton: Locator;
   readonly formError: Locator;
 
-  constructor(protected readonly page: Page, title: string, submitLabel = 'Submit') {
+  constructor(
+    protected readonly page: Page,
+    title: string,
+    submitLabel = 'Submit',
+  ) {
     // The dialog's aria-labelledby is not always resolved, so match on its title text instead of its accessible name.
     this.dialog = page.getByRole('dialog').filter({ hasText: title });
     this.submitButton = this.dialog.getByRole('button', { name: submitLabel });
@@ -68,13 +72,24 @@ export class ModalFormComponent {
 
   /** Submits and returns the first matching response, so specs can check what the server did. */
   protected async submitAndWait(path: RegExp, methods: HttpMethod[]): Promise<Response> {
-    const saved = this.page.waitForResponse(
-      (response) =>
-        path.test(new URL(response.url()).pathname) && (methods as string[]).includes(response.request().method()),
-    );
-    // The "First Use Tour" toast can cover Submit; keyboard activation avoids changing the user's tour state.
-    await this.submitButton.focus();
-    await this.page.keyboard.press('Enter');
-    return saved;
+    const matches = (url: string, method: string): boolean => path.test(new URL(url).pathname) && (methods as string[]).includes(method);
+    const saved = this.page.waitForResponse((response) => matches(response.url(), response.request().method()));
+    // A dispatched click is not blocked by the "First Use Tour" toast covering Submit.
+    // Just after a related-field option is chosen, a click can be ignored; click again until the request starts.
+    for (let attempt = 1; ; attempt++) {
+      const sent = this.page.waitForRequest((request) => matches(request.url(), request.method()), {
+        timeout: SUBMIT_REQUEST_TIMEOUT,
+      });
+      await this.submitButton.dispatchEvent('click');
+      try {
+        await sent;
+        return await saved;
+      } catch (error) {
+        if (attempt >= SUBMIT_ATTEMPTS) throw error;
+      }
+    }
   }
 }
+
+const SUBMIT_REQUEST_TIMEOUT = 5_000;
+const SUBMIT_ATTEMPTS = 3;

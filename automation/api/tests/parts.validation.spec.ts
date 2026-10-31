@@ -215,18 +215,21 @@ test.describe('Field-level validation', () => {
           return await categories.createInvalid({ name, icon });
         });
 
-        await test.step(accepted ? 'Check 201 and the icon is stored as sent' : 'Check 400 with an _icon error and no category was created', async () => {
-          if (accepted) {
-            expect(response.status()).toBe(201);
-            const created = (await response.json()) as Category;
-            const stored = (await (await categories.get(created.pk)).json()) as Record<string, unknown>;
-            expect(stored.icon).toBe(icon);
-          } else {
-            expect(response.status()).toBe(400);
-            expect(await response.json()).toHaveProperty('_icon');
-            expect((await categories.listOrFail({ search: name })).count).toBe(0);
-          }
-        });
+        await test.step(
+          accepted ? 'Check 201 and the icon is stored as sent' : 'Check 400 with an _icon error and no category was created',
+          async () => {
+            if (accepted) {
+              expect(response.status()).toBe(201);
+              const created = (await response.json()) as Category;
+              const stored = (await (await categories.get(created.pk)).json()) as Record<string, unknown>;
+              expect(stored.icon).toBe(icon);
+            } else {
+              expect(response.status()).toBe(400);
+              expect(await response.json()).toHaveProperty('_icon');
+              expect((await categories.listOrFail({ search: name })).count).toBe(0);
+            }
+          },
+        );
       });
     }
 
@@ -262,17 +265,22 @@ test.describe('Field-level validation', () => {
           return await parts.createInvalid({ name, link });
         });
 
-        await test.step(accepted ? 'Check the part is created and the link is stored exactly' : 'Check the request is rejected with 400 and no part was created', async () => {
-          if (accepted) {
-            expect(response.status()).toBe(201);
-            const created = (await response.json()) as Part;
-            const stored = (await (await parts.get(created.pk)).json()) as { link: string | null };
-            expect(stored.link).toBe(link);
-          } else {
-            expect(response.status()).toBe(400);
-            await expectPartsListed(await parts.listFiltered({ search: name }), []);
-          }
-        });
+        await test.step(
+          accepted
+            ? 'Check the part is created and the link is stored exactly'
+            : 'Check the request is rejected with 400 and no part was created',
+          async () => {
+            if (accepted) {
+              expect(response.status()).toBe(201);
+              const created = (await response.json()) as Part;
+              const stored = (await (await parts.get(created.pk)).json()) as { link: string | null };
+              expect(stored.link).toBe(link);
+            } else {
+              expect(response.status()).toBe(400);
+              await expectPartsListed(await parts.listFiltered({ search: name }), []);
+            }
+          },
+        );
       });
     }
 
@@ -324,7 +332,9 @@ test.describe('Field-level validation', () => {
     for (const field of ['name', 'description', 'IPN', 'active', 'minimum_stock'] as const) {
       test(`API-VAL-013: null on the non-nullable part field ${field}`, async ({ parts }) => {
         const created = await test.step('Setup: POST /api/part/ with known values', async () => {
-          return await parts.createOrFail(newPart({ description: 'Known description', IPN: uniqueName('IPN'), minimum_stock: 5, active: true }));
+          return await parts.createOrFail(
+            newPart({ description: 'Known description', IPN: uniqueName('IPN'), minimum_stock: 5, active: true }),
+          );
         });
 
         const response = await test.step(`PATCH /api/part/{id}/ with ${field}=null`, async () => {
@@ -347,18 +357,19 @@ test.describe('Field-level validation', () => {
 
     for (const { field, expected } of CATEGORY_NULLED_FIELDS) {
       test(`API-VAL-014: set the nullable category field ${field} to null`, async ({ stockLocations, categories }) => {
-        const created = await test.step('Setup: a stock location and a category with default_keywords, default_location, and icon set', async () => {
-          const location = await stockLocations.createOrFail(newStockLocation());
-          const response = await categories.createInvalid({
-            name: uniqueName('pw-category'),
-            default_keywords: 'known keywords',
-            default_location: location.pk,
-            // The local instance rejects an icon that is not in the package:name:variant format (see OQ-VAL-04).
-            icon: 'ti:box:outline',
+        const created =
+          await test.step('Setup: a stock location and a category with default_keywords, default_location, and icon set', async () => {
+            const location = await stockLocations.createOrFail(newStockLocation());
+            const response = await categories.createInvalid({
+              name: uniqueName('pw-category'),
+              default_keywords: 'known keywords',
+              default_location: location.pk,
+              // The local instance rejects an icon that is not in the package:name:variant format (see OQ-VAL-04).
+              icon: 'ti:box:outline',
+            });
+            expect(response.status()).toBe(201);
+            return (await response.json()) as Category;
           });
-          expect(response.status()).toBe(201);
-          return (await response.json()) as Category;
-        });
 
         const response = await test.step(`PATCH /api/part/category/{id}/ with ${field}=null`, async () => {
           return await categories.updateInvalid(created.pk, { [field]: null });

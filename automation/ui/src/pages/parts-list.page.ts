@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { ImportSessionFormComponent } from '../components/import-session-form.component';
 import { PartFormComponent } from '../components/part-form.component';
 import { ROUTES } from '../models/paths';
 
@@ -7,12 +8,14 @@ export class PartsListPage {
   // Icon-only menu buttons expose only an aria-label, so that label is the stable hook.
   readonly addPartsMenu: Locator;
   readonly createPartItem: Locator;
+  readonly importFromFileItem: Locator;
   readonly searchInput: Locator;
   readonly panelTabs: Locator;
 
   constructor(private page: Page) {
     this.addPartsMenu = page.getByRole('button', { name: 'action-menu-add-parts' });
     this.createPartItem = page.getByRole('menuitem', { name: 'action-menu-add-parts-create-part' });
+    this.importFromFileItem = page.getByRole('menuitem', { name: 'action-menu-add-parts-import-from-file' });
     this.searchInput = page.getByRole('textbox', { name: 'table-search-input' });
     this.panelTabs = page.getByRole('tablist', { name: 'panel-tabs-partcategory' });
   }
@@ -37,6 +40,23 @@ export class PartsListPage {
     await this.addPartsMenu.click();
     await this.createPartItem.click();
     const form = new PartFormComponent(this.page, 'Add Part');
+    await form.waitUntilReady();
+    return form;
+  }
+
+  /** Whether Add Parts > Import from File is offered; leaves the menu open when it is. */
+  async canImportFromFile(): Promise<boolean> {
+    // The table toolbar, including Add Parts, is complete once the first fetch finishes.
+    await this.waitForTable();
+    if (!(await this.addPartsMenu.isVisible())) return false;
+    await this.addPartsMenu.click();
+    return (await this.importFromFileItem.isVisible()) && (await this.importFromFileItem.isEnabled());
+  }
+
+  /** Clicks Import from File in the open Add Parts menu. */
+  async openImportForm(): Promise<ImportSessionFormComponent> {
+    await this.importFromFileItem.click();
+    const form = new ImportSessionFormComponent(this.page, 'Import Parts');
     await form.waitUntilReady();
     return form;
   }

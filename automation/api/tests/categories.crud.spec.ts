@@ -266,9 +266,10 @@ test.describe('Part Categories CRUD', () => {
         return await categories.createOrFail(newCategory());
       });
 
-      const response = await test.step('DELETE /api/part/category/{id}/ with delete_parts=false and delete_child_categories=false', async () => {
-        return await categories.delete(created.pk);
-      });
+      const response =
+        await test.step('DELETE /api/part/category/{id}/ with delete_parts=false and delete_child_categories=false', async () => {
+          return await categories.delete(created.pk);
+        });
 
       await test.step('Check the delete returns 204 and the category is no longer listed', async () => {
         expect(response.status()).toBe(204);
@@ -279,20 +280,26 @@ test.describe('Part Categories CRUD', () => {
     // Expected to fail until InvenTree accepts the body-less DELETE its schema documents; turns red once fixed.
     test.fail(
       'API-CAT-014: delete an empty category without a request body',
-      { annotation: { type: 'issue', description: 'Application finding OQ-ACAT-03: the server returns 400 without delete_parts and delete_child_categories, which the schema does not list' } },
+      {
+        annotation: {
+          type: 'issue',
+          description:
+            'Application finding OQ-ACAT-03: the server returns 400 without delete_parts and delete_child_categories, which the schema does not list',
+        },
+      },
       async ({ categories }) => {
-      const created = await test.step('Setup: POST /api/part/category/', async () => {
-        return await categories.createOrFail(newCategory());
-      });
+        const created = await test.step('Setup: POST /api/part/category/', async () => {
+          return await categories.createOrFail(newCategory());
+        });
 
-      const response = await test.step('DELETE /api/part/category/{id}/ with no body, as the schema describes', async () => {
-        return await categories.deleteWithoutBody(created.pk);
-      });
+        const response = await test.step('DELETE /api/part/category/{id}/ with no body, as the schema describes', async () => {
+          return await categories.deleteWithoutBody(created.pk);
+        });
 
-      await test.step('Check the delete returns 204 and the category is no longer listed', async () => {
-        expect(response.status()).toBe(204);
-        expect((await categories.listOrFail({ search: created.name })).count).toBe(0);
-      });
+        await test.step('Check the delete returns 204 and the category is no longer listed', async () => {
+          expect(response.status()).toBe(204);
+          expect((await categories.listOrFail({ search: created.name })).count).toBe(0);
+        });
       },
     );
 
@@ -301,21 +308,31 @@ test.describe('Part Categories CRUD', () => {
       { delete_parts: false, delete_child_categories: false, child: 'moved', partInT: 'moved', partInChild: 'stays' },
       { delete_parts: false, delete_child_categories: true, child: 'deleted', partInT: 'moved', partInChild: 'moved' },
       { delete_parts: true, delete_child_categories: false, child: 'moved', partInT: 'deleted', partInChild: 'stays' },
-      { delete_parts: true, delete_child_categories: true, child: 'deleted', partInT: 'deleted', partInChild: 'deleted' },
+      {
+        delete_parts: true,
+        delete_child_categories: true,
+        child: 'deleted',
+        partInT: 'deleted',
+        partInChild: 'deleted',
+      },
     ] as const;
 
     for (const row of DELETE_FLAG_ROWS) {
       const flags = { delete_parts: row.delete_parts, delete_child_categories: row.delete_child_categories };
 
-      test(`API-CAT-015: delete a category with delete_parts=${row.delete_parts} and delete_child_categories=${row.delete_child_categories}`, async ({ categories, parts }) => {
-        const { grandparent, target, child, partInT, partInChild } = await test.step('Setup: G, T under G, C under T, part X in T, part Y in C', async () => {
-          const grandparent = await categories.createOrFail(newCategory());
-          const target = await categories.createOrFail(newCategory({ parent: grandparent.pk }));
-          const child = await categories.createOrFail(newCategory({ parent: target.pk }));
-          const partInT = await parts.createOrFail(newPart({ category: target.pk }));
-          const partInChild = await parts.createOrFail(newPart({ category: child.pk }));
-          return { grandparent, target, child, partInT, partInChild };
-        });
+      test(`API-CAT-015: delete a category with delete_parts=${row.delete_parts} and delete_child_categories=${row.delete_child_categories}`, async ({
+        categories,
+        parts,
+      }) => {
+        const { grandparent, target, child, partInT, partInChild } =
+          await test.step('Setup: G, T under G, C under T, part X in T, part Y in C', async () => {
+            const grandparent = await categories.createOrFail(newCategory());
+            const target = await categories.createOrFail(newCategory({ parent: grandparent.pk }));
+            const child = await categories.createOrFail(newCategory({ parent: target.pk }));
+            const partInT = await parts.createOrFail(newPart({ category: target.pk }));
+            const partInChild = await parts.createOrFail(newPart({ category: child.pk }));
+            return { grandparent, target, child, partInT, partInChild };
+          });
 
         const response = await test.step(`DELETE /api/part/category/{T}/ with ${JSON.stringify(flags)}`, async () => {
           return await categories.delete(target.pk, flags);
@@ -337,7 +354,10 @@ test.describe('Part Categories CRUD', () => {
         });
 
         const expectedCategory = { moved: grandparent.pk, stays: child.pk } as const;
-        for (const [label, part, outcome] of [['X (in T)', partInT, row.partInT], ['Y (in C)', partInChild, row.partInChild]] as const) {
+        for (const [label, part, outcome] of [
+          ['X (in T)', partInT, row.partInT],
+          ['Y (in C)', partInChild, row.partInChild],
+        ] as const) {
           await test.step(`Check part ${label} is ${outcome}`, async () => {
             const read = await parts.get(part.pk);
             if (outcome === 'deleted') {

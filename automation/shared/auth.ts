@@ -27,6 +27,7 @@ export async function revokeToken(login: APIRequestContext, name: string): Promi
 }
 
 type MeUser = { is_staff: boolean; is_superuser: boolean };
+type MeRoles = { roles: Record<string, string[] | null> };
 
 /**
  * Stops the run when the logged-in account does not match its role, for example a reader
@@ -41,6 +42,14 @@ export async function verifyAccountRole(request: APIRequestContext, role: Role):
   }
   if (role !== 'SUPERUSER' && (me.is_superuser || me.is_staff)) {
     throw new Error(`The ${role} role is configured with a staff or superuser account; use a separate non-staff user`);
+  }
+  if (role === 'ENGINEER') {
+    const rolesResponse = await request.get('/api/user/me/roles/');
+    if (!rolesResponse.ok()) throw new Error(`Could not read /api/user/me/roles/ for role "${role}": ${rolesResponse.status()}`);
+    const part = ((await rolesResponse.json()) as MeRoles).roles.part ?? [];
+    if (!part.includes('add') || !part.includes('change')) {
+      throw new Error('The ENGINEER role needs Part add and change permissions');
+    }
   }
 }
 

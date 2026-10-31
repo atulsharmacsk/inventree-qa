@@ -39,6 +39,15 @@ export class PartService {
     return this.request.patch(`/api/part/${id}/`, { data: changes });
   }
 
+  /** For test setup: applies changes (for example `locked: true`) and stops the test if that fails. */
+  async updateOrFail(id: number, changes: Partial<NewPart>): Promise<Part> {
+    const response = await this.update(id, changes);
+    if (response.status() !== 200) {
+      throw new Error(`Could not update part ${id}: ${response.status()} ${await response.text()}`);
+    }
+    return (await response.json()) as Part;
+  }
+
   replace(id: number, part: NewPart): Promise<APIResponse> {
     return this.request.put(`/api/part/${id}/`, { data: part });
   }
@@ -102,18 +111,26 @@ export class PartService {
 
   /** Deletes only the parts this test created (newest, so variants, first) and returns any failures. */
   async deleteCreated(): Promise<string[]> {
-    const failures: string[] = [];
-    for (const id of [...this.createdIds].reverse()) {
-      // Locked parts cannot be deleted while locking is enabled, so unlock before deactivating.
-      await this.update(id, { locked: false });
-      // Local 1.6.3 rejects deleting an active part with 400 (OQ-PART-02), so deactivate first.
-      await this.update(id, { active: false });
-      const response = await deleteWithRetry(() => this.delete(id));
-      if (response.status() !== 204 && response.status() !== 404) {
-        failures.push(`Deleting part ${id} returned ${response.status()}`);
+    let pending = [...this.createdIds].reverse();
+    let lastStatus = new Map<number, number>();
+    // A part still used in another test part's BOM returns 400 until that assembly is deleted, so retry in passes.
+    for (let pass = 0; pass < 3 && pending.length > 0; pass++) {
+      const retry: number[] = [];
+      lastStatus = new Map();
+      for (const id of pending) {
+        // Locked parts cannot be deleted while locking is enabled, so unlock before deactivating.
+        await this.update(id, { locked: false });
+        // Local 1.6.3 rejects deleting an active part with 400 (OQ-PART-02), so deactivate first.
+        await this.update(id, { active: false });
+        const response = await deleteWithRetry(() => this.delete(id));
+        if (response.status() !== 204 && response.status() !== 404) {
+          retry.push(id);
+          lastStatus.set(id, response.status());
+        }
       }
+      pending = retry;
     }
     this.createdIds = [];
-    return failures;
+    return pending.map((id) => `Deleting part ${id} returned ${lastStatus.get(id)}`);
   }
 }

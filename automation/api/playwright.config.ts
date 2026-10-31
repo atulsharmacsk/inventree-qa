@@ -7,6 +7,9 @@ import { retriesFromEnv, workersFromEnv } from '../shared/run-options';
 // Load ENV (LOCALHOST or REMOTE) and the <ROLE>_USERNAME / <ROLE>_PASSWORD credentials from .env.
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
+// Playwright runs a teardown project in every shard; keep the global-setting tests to shard 1 (SHARD is set by CI).
+const RUN_SETTINGS = (process.env.SHARD ?? '1') === '1';
+
 export default defineConfig({
   testDir: './tests',
   // The shared demo answers single requests in 4-8 s, and setup plus cleanup count toward the test timeout.
@@ -28,7 +31,7 @@ export default defineConfig({
   },
   projects: [
     // `settings` runs after every `api` test, so a test that changes a global setting never overlaps another test.
-    { name: 'api', testIgnore: /\.settings\.spec\.ts$/, teardown: 'settings' },
-    { name: 'settings', testMatch: /\.settings\.spec\.ts$/, fullyParallel: false },
+    { name: 'api', testIgnore: /\.settings\.spec\.ts$/, ...(RUN_SETTINGS ? { teardown: 'settings' } : {}) },
+    ...(RUN_SETTINGS ? [{ name: 'settings', testMatch: /\.settings\.spec\.ts$/, fullyParallel: false }] : []),
   ],
 });

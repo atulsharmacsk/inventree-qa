@@ -165,15 +165,26 @@ test.describe('Part attributes', () => {
       orderLineItems,
       stockLocation,
     }) => {
-      const ctx = { parts, companies, supplierParts, purchaseOrders, salesOrders, stockLocations, partDetail, orderLineItems, stockLocation };
+      const ctx = {
+        parts,
+        companies,
+        supplierParts,
+        purchaseOrders,
+        salesOrders,
+        stockLocations,
+        partDetail,
+        orderLineItems,
+        stockLocation,
+      };
 
-      const { searchText, inactive, active } = await test.step('Setup: inactive part and an active control part, both Component, Purchaseable and Salable', async () => {
-        const searchText = uniqueName('pw-ui-pick');
-        const flags = { component: true, purchaseable: true, salable: true };
-        const inactive = await parts.createOrFail(newPart({ name: `${searchText}-inactive`, active: false, ...flags }));
-        const active = await parts.createOrFail(newPart({ name: `${searchText}-active`, ...flags }));
-        return { searchText, inactive, active };
-      });
+      const { searchText, inactive, active } =
+        await test.step('Setup: inactive part and an active control part, both Component, Purchaseable and Salable', async () => {
+          const searchText = uniqueName('pw-ui-pick');
+          const flags = { component: true, purchaseable: true, salable: true };
+          const inactive = await parts.createOrFail(newPart({ name: `${searchText}-inactive`, active: false, ...flags }));
+          const active = await parts.createOrFail(newPart({ name: `${searchText}-active`, ...flags }));
+          return { searchText, inactive, active };
+        });
 
       const targetId = await test.step(row.setupStep, async () => row.arrange(ctx, [inactive, active]));
 
@@ -194,7 +205,13 @@ test.describe('Part attributes', () => {
   // Expected to fail until stock can no longer be added from an inactive part's own page; turns red once fixed.
   test.fail(
     "UI-ATTR-013: the inactive part's Stock tab does not create a stock item",
-    { annotation: { type: 'issue', description: "Application finding OQ-ATTR-05: Add Stock Item on an inactive part's Stock tab saves a stock item (201), while every part picker hides inactive parts" } },
+    {
+      annotation: {
+        type: 'issue',
+        description:
+          "Application finding OQ-ATTR-05: Add Stock Item on an inactive part's Stock tab saves a stock item (201), while every part picker hides inactive parts",
+      },
+    },
     async ({ parts, stockItems, partDetail }) => {
       const part = await test.step('Setup: inactive part with Component, Purchaseable and Salable on, and no stock', async () => {
         const part = await parts.createOrFail(newPart({ active: false, component: true, purchaseable: true, salable: true }));

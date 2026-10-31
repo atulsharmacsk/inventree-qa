@@ -141,7 +141,7 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test('API-REL-003: remove a part\'s category', async ({ parts, categories }) => {
+    test("API-REL-003: remove a part's category", async ({ parts, categories }) => {
       const part = await test.step('Setup: a part in a category', async () => {
         const category = await categories.createOrFail(newCategory());
         return await parts.createOrFail(newPart({ category: category.pk }));
@@ -209,7 +209,7 @@ test.describe('Relational integrity', () => {
   });
 
   test.describe('Default locations', () => {
-    test('API-REL-006: set a part\'s default location', async ({ parts, stockLocations }) => {
+    test("API-REL-006: set a part's default location", async ({ parts, stockLocations }) => {
       const { part, location } = await test.step('Setup: a stock location and a part', async () => {
         return {
           part: await parts.createOrFail(newPart()),
@@ -228,7 +228,7 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test('API-REL-007: clear a part\'s default location', async ({ parts, stockLocations }) => {
+    test("API-REL-007: clear a part's default location", async ({ parts, stockLocations }) => {
       const part = await test.step('Setup: a part with a default location', async () => {
         const location = await stockLocations.createOrFail(newStockLocation());
         return await parts.createOrFail(newPart({ default_location: location.pk }));
@@ -247,16 +247,17 @@ test.describe('Relational integrity', () => {
 
     // OQ-REL-02 (confirmed by the user): only the part's own category counts; a parent's default is not inherited.
     test('API-REL-008: category default location seen from a part', async ({ stockLocations, categories, parts }) => {
-      const { location, inCategory, inChild } = await test.step('Setup: location L, category C with default L, child D without one, a part in each', async () => {
-        const location = await stockLocations.createOrFail(newStockLocation());
-        const category = await categories.createOrFail(newCategory({ default_location: location.pk }));
-        const child = await categories.createOrFail(newCategory({ parent: category.pk }));
-        return {
-          location,
-          inCategory: await parts.createOrFail(newPart({ category: category.pk })),
-          inChild: await parts.createOrFail(newPart({ category: child.pk })),
-        };
-      });
+      const { location, inCategory, inChild } =
+        await test.step('Setup: location L, category C with default L, child D without one, a part in each', async () => {
+          const location = await stockLocations.createOrFail(newStockLocation());
+          const category = await categories.createOrFail(newCategory({ default_location: location.pk }));
+          const child = await categories.createOrFail(newCategory({ parent: category.pk }));
+          return {
+            location,
+            inCategory: await parts.createOrFail(newPart({ category: category.pk })),
+            inChild: await parts.createOrFail(newPart({ category: child.pk })),
+          };
+        });
 
       await test.step('GET /api/part/{id}/ for the part in C shows L and no own default_location', async () => {
         const stored = await parts.getOrFail(inCategory.pk);
@@ -385,7 +386,7 @@ test.describe('Relational integrity', () => {
         return (await response.json()) as SupplierPart;
       });
 
-      await test.step('Check the supplier part links to the manufacturer part, and the part\'s manufacturer parts list contains it', async () => {
+      await test.step("Check the supplier part links to the manufacturer part, and the part's manufacturer parts list contains it", async () => {
         expect(supplierPart.manufacturer_part).toBe(manufacturerPart.pk);
         const response = await manufacturerParts.list({ part: part.pk });
         expect(response.status()).toBe(200);
@@ -394,13 +395,20 @@ test.describe('Relational integrity', () => {
       });
     });
 
-    test('API-REL-014: find a part by supplier SKU and manufacturer MPN', async ({ parts, companies, manufacturerParts, supplierParts }) => {
+    test('API-REL-014: find a part by supplier SKU and manufacturer MPN', async ({
+      parts,
+      companies,
+      manufacturerParts,
+      supplierParts,
+    }) => {
       const { part, sku, mpn } = await test.step('Setup: a purchaseable part with a manufacturer part and a supplier part', async () => {
         const part = await parts.createOrFail(newPart({ purchaseable: true }));
         const manufacturer = await companies.createOrFail(newCompany({ is_manufacturer: true }));
         const supplier = await companies.createOrFail(newCompany({ is_supplier: true }));
         const manufacturerPart = await manufacturerParts.createOrFail(newManufacturerPart(part.pk, manufacturer.pk));
-        const supplierPart = await supplierParts.createOrFail(newSupplierPart(part.pk, supplier.pk, { manufacturer_part: manufacturerPart.pk }));
+        const supplierPart = await supplierParts.createOrFail(
+          newSupplierPart(part.pk, supplier.pk, { manufacturer_part: manufacturerPart.pk }),
+        );
         return { part, sku: supplierPart.SKU, mpn: manufacturerPart.MPN ?? '' };
       });
 
@@ -445,9 +453,24 @@ test.describe('Relational integrity', () => {
     for (const row of INACTIVE_PART_CASES) {
       test.fail(
         `${row.id}: ${row.request} for an inactive part is rejected`,
-        { annotation: { type: 'issue', description: 'Application finding OQ-REL-06: the API accepts this request for an inactive part (201), while the UI hides inactive parts' } },
+        {
+          annotation: {
+            type: 'issue',
+            description:
+              'Application finding OQ-REL-06: the API accepts this request for an inactive part (201), while the UI hides inactive parts',
+          },
+        },
         async ({ parts, stockItems, stockLocations, bomItems, companies, supplierParts, purchaseOrders, salesOrders }) => {
-          const ctx = { parts, stockItems, stockLocations, bomItems, companies, supplierParts, purchaseOrders, salesOrders };
+          const ctx = {
+            parts,
+            stockItems,
+            stockLocations,
+            bomItems,
+            companies,
+            supplierParts,
+            purchaseOrders,
+            salesOrders,
+          };
 
           const part = await test.step('Setup: inactive part with Component, Purchaseable and Salable on', async () => {
             return await parts.createOrFail(newPart({ active: false, component: true, purchaseable: true, salable: true }));

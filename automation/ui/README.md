@@ -30,10 +30,10 @@ The `setup` project (`tests/auth.setup.ts`) logs in once through the login page 
 | Path | Purpose |
 |---|---|
 | `tests/auth.setup.ts` | One-time login; saves storage state |
-| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `stockLocations`, `companies`, `supplierParts`, `purchaseOrders`, `salesOrders`, `settings`), automatic cleanup reported as `cleanup` annotations |
+| `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `stockLocations`, `companies`, `supplierParts`, `purchaseOrders`, `salesOrders`, `settings`, `importSessions`), automatic cleanup reported as `cleanup` annotations |
 | `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`, `part.tabs.spec.ts`, `part.flow.spec.ts`) |
-| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item), `OrderLineItemsPage` (purchase and sales order Add Line Item), `StockLocationPage` (Add Stock Item) |
-| `src/components/` | `NavigationComponent` (header tabs), `ModalFormComponent` (base for API form dialogs: fields by API name, form error, submit with response), `PartFormComponent` (Add/Edit Part, Active switch), `StockItemFormComponent` (Add Stock Item), `DeleteDialogComponent` (delete confirmation) |
+| `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu, Import from File), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item), `OrderLineItemsPage` (purchase and sales order Add Line Item), `StockLocationPage` (Add Stock Item) |
+| `src/components/` | `NavigationComponent` (header tabs), `ModalFormComponent` (base for API form dialogs: fields by API name, form error, submit with response), `PartFormComponent` (Add/Edit Part, Active switch), `StockItemFormComponent` (Add Stock Item), `ImportSessionFormComponent` (Import Parts file upload), `ImporterComponent` (Importing Data dialog: accept column mapping, row error icon and error list), `DeleteDialogComponent` (delete confirmation) |
 | `../shared/` | Code shared with the API project: token handling, `PartService`, `CategoryService`, `StockItemService`, `StockLocationService`, `CompanyService`, `SupplierPartService`, `OrderService`, `SettingsService`, models, `uniqueName`, cleanup annotations, and the redaction patterns |
 | `src/models/`, `src/data/` | UI-only types (`PartFormInput`), routes, storage-state path, unique-name factories |
 | `src/global-teardown.ts` | Rewrites every `trace.zip` with the shared `hideSecrets` patterns (session and CSRF cookies, auth and CSRF headers, tokens, the password) before the HTML report copies it |
@@ -41,6 +41,8 @@ The `setup` project (`tests/auth.setup.ts`) logs in once through the login page 
 ## Selectors
 
 Role-based locators are used throughout. InvenTree exposes many controls only through generated aria-labels (for example `login-username`, `text-field-name`, `number-field-quantity`, `boolean-field-active`, `action-menu-part-actions-edit`, `action-button-add-stock-item`, `panel-tabs-part`); these are used where no visible label is associated, and each page object notes why. The Mantine switch input is visually hidden behind its track, so `PartFormComponent.setActive` sets it with `force`.
+
+These generated aria-labels are an internal naming convention of InvenTree's own components (`text-field-${fieldName}`, `action-menu-${id}`, ...), not words a user reads, so they are closer to a `data-testid` contract with the app than a pure accessible name. Treat a rename of an internal field or icon-button `id` in InvenTree as a breaking change to review here, the same as an API field rename, even though nothing user-visible changed.
 
 ## Known Behaviors
 
@@ -59,7 +61,8 @@ Role-based locators are used throughout. InvenTree exposes many controls only th
 | UI-ATTR-008, UI-ATTR-012, UI-ATTR-016, UI-ATTR-017 | Passed |
 | UI-TAB-005, UI-TAB-006, UI-TAB-009, UI-TAB-011, UI-TAB-015, UI-TAB-019 (`part.tabs.spec.ts`) | Passed (per the Run D plan entry; not re-run in this update) |
 | UI-TAB-013, UI-TAB-018 | Skipped (`fixme`, blocked by OQ-TAB-07) |
-| UI-IMPORT-007, UI-IMPORT-008 | Skipped (`fixme`, blocked) |
+| UI-IMPORT-007 (2026-10-31) | Passed (3 of 3 repeats): the row with an unknown category is in error with a `category` error; the valid row has none; no part is created |
+| UI-IMPORT-008 (2026-10-31, role `ENGINEER`) | Expected failure (`test.fail`, DEF-13): a non-staff user is offered Import from File and the session is created (201) |
 | UI-ATTR-013 (2026-10-31): BOM, purchase order, sales order, and stock location forms (4 tests) | Passed: the part picker offers the active control part and not the inactive part |
 | UI-ATTR-013 (2026-10-31): inactive part's own Stock tab | Expected failure (`test.fail`, application finding OQ-ATTR-05): a stock item is created |
 | UI-CREATE-009 (2026-10-31, `part.settings.spec.ts`, `settings` project) | Passed on LOCALHOST: switches *Initial Stock Data* on, then restores it; skips on REMOTE |
