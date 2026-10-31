@@ -11,7 +11,15 @@ test.describe('Global setting variants', () => {
   test.use({ role: 'SUPERUSER' });
 
   // `globalSetting` comes first so the setting is restored after the part, stock, and location are cleaned up.
-  test('UI-CREATE-009: create a part with initial stock', async ({ globalSetting, page, parts, stockLocations, stockItems, partsList, partDetail }) => {
+  test('UI-CREATE-009: create a part with initial stock', async ({
+    globalSetting,
+    page,
+    parts,
+    stockLocations,
+    stockItems,
+    partsList,
+    partDetail,
+  }) => {
     await test.step('Setup: PART_CREATE_INITIAL=true (Initial Stock Data)', async () => {
       await globalSetting('PART_CREATE_INITIAL', 'true');
     });
@@ -21,18 +29,19 @@ test.describe('Global setting variants', () => {
     const input = partFormInput();
     const quantity = 7;
 
-    const created = await test.step(`Open Parts > Add Parts > Create Part, enter a name and initial stock ${quantity} at ${location.name}, then submit`, async () => {
-      await partsList.goto();
-      const form = await partsList.openCreatePartForm();
-      await form.fill(input);
-      await form.fillInitialStock(quantity, location.name);
-      const response = await form.submit();
-      expect(response.status()).toBe(201);
-      const part = (await response.json()) as Part;
-      parts.track(part.pk);
-      stockItems.trackPart(part.pk);
-      return part;
-    });
+    const created =
+      await test.step(`Open Parts > Add Parts > Create Part, enter a name and initial stock ${quantity} at ${location.name}, then submit`, async () => {
+        await partsList.goto();
+        const form = await partsList.openCreatePartForm();
+        await form.fill(input);
+        await form.fillInitialStock(quantity, location.name);
+        const response = await form.submit();
+        expect(response.status()).toBe(201);
+        const part = (await response.json()) as Part;
+        parts.track(part.pk);
+        stockItems.trackPart(part.pk);
+        return part;
+      });
 
     await test.step('Check the part was created with one stock item of that quantity at the location', async () => {
       await expect(page).toHaveURL(new RegExp(`/web/part/${created.pk}/`));

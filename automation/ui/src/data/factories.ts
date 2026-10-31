@@ -9,8 +9,18 @@ import {
 } from '../../../shared/models';
 import { uniqueName } from '../../../shared/data';
 import type { PartFormInput } from '../models/part';
+import type { UploadFile } from '../components/import-session-form.component';
 
 export { uniqueName };
+
+export type ImportRow = { name: string; category?: string };
+
+/** A parts CSV (name, description, category) for import tests; one row with a unique name by default. */
+export function partImportCsv(rows: ImportRow[] = [{ name: uniqueName('pw-ui-import') }]): UploadFile {
+  const lines = rows.map(({ name, category = '' }) => `${name},Imported by UI automation,${category}`);
+  const csv = ['name,description,category', ...lines].join('\n') + '\n';
+  return { name: 'parts.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) };
+}
 
 export function newPart(overrides: Partial<NewPart> = {}): NewPart {
   return { name: uniqueName('pw-ui-part'), ...overrides };

@@ -6,6 +6,9 @@ import { retriesFromEnv, workersFromEnv } from '../shared/run-options';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
+// Playwright runs a teardown project in every shard; keep the global-setting tests to shard 1 (SHARD is set by CI).
+const RUN_SETTINGS = (process.env.SHARD ?? '1') === '1';
+
 export default defineConfig({
   testDir: './tests',
   // The shared demo is slow: fixture setup alone (API token, test data) can take 18 s, and it counts toward the test timeout.
@@ -39,16 +42,20 @@ export default defineConfig({
       testIgnore: [/auth\.setup\.ts/, /\.settings\.spec\.ts$/],
       dependencies: ['setup'],
       // `settings` runs after every `ui` test, so a test that changes a global setting never overlaps another test.
-      teardown: 'settings',
+      ...(RUN_SETTINGS ? { teardown: 'settings' } : {}),
       // Storage state is chosen per test from the `role` fixture in tests/fixtures.ts.
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      // Teardown of `ui`, so it cannot depend on `setup`; it reuses the sessions `ui` already required.
-      name: 'settings',
-      testMatch: /\.settings\.spec\.ts$/,
-      fullyParallel: false,
-      use: { ...devices['Desktop Chrome'] },
-    },
+    ...(RUN_SETTINGS
+      ? [
+          {
+            // Teardown of `ui`, so it cannot depend on `setup`; it reuses the sessions `ui` already required.
+            name: 'settings',
+            testMatch: /\.settings\.spec\.ts$/,
+            fullyParallel: false,
+            use: { ...devices['Desktop Chrome'] },
+          },
+        ]
+      : []),
   ],
 });

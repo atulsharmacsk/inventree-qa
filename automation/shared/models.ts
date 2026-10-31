@@ -283,6 +283,12 @@ export type ParameterFilters = {
   model_id: number;
 };
 
+/** Fields sent when creating a parameter value on a record, for example a part. */
+export type NewParameter = ParameterFilters & {
+  template: number;
+  data: string;
+};
+
 /** The `model_type` value for parts in the generic parameter API. */
 export const PART_MODEL_TYPE = 'part.part';
 

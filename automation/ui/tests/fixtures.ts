@@ -6,6 +6,7 @@ import { credentialsFor, missingRoleMessage, type Role } from '../../shared/role
 import { BomItemService } from '../../shared/services/bom-item.service';
 import { CategoryService } from '../../shared/services/category.service';
 import { CompanyService } from '../../shared/services/company.service';
+import { ImportSessionService } from '../../shared/services/import-session.service';
 import { OrderService } from '../../shared/services/order.service';
 import { ParameterService } from '../../shared/services/parameter.service';
 import { PartService } from '../../shared/services/part.service';
@@ -15,6 +16,7 @@ import { StockItemService } from '../../shared/services/stock-item.service';
 import { StockLocationService } from '../../shared/services/stock-location.service';
 import { SupplierPartService } from '../../shared/services/supplier-part.service';
 import { NavigationComponent } from '../src/components/navigation.component';
+import { ImporterComponent } from '../src/components/importer.component';
 import { storageStatePath } from '../src/models/paths';
 import { OrderLineItemsPage } from '../src/pages/order-line-items.page';
 import { PartDetailPage } from '../src/pages/part-detail.page';
@@ -37,9 +39,11 @@ type Fixtures = {
   purchaseOrders: OrderService;
   salesOrders: OrderService;
   settings: SettingsService;
+  importSessions: ImportSessionService;
   /** Sets a global setting for this test and restores it afterwards; LOCALHOST only, used by `*.settings.spec.ts`. */
   globalSetting: (key: string, value: string) => Promise<void>;
   navigation: NavigationComponent;
+  importer: ImporterComponent;
   partsList: PartsListPage;
   partDetail: PartDetailPage;
   orderLineItems: OrderLineItemsPage;
@@ -120,6 +124,12 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     await use(new SettingsService(apiRequest));
   },
 
+  importSessions: async ({ apiRequest }, use, testInfo) => {
+    const importSessions = new ImportSessionService(apiRequest);
+    await use(importSessions);
+    reportCleanup(testInfo, await importSessions.deleteCreated());
+  },
+
   companies: async ({ apiRequest }, use, testInfo) => {
     const companies = new CompanyService(apiRequest);
     await use(companies);
@@ -160,6 +170,10 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
 
   navigation: async ({ page }, use) => {
     await use(new NavigationComponent(page));
+  },
+
+  importer: async ({ page }, use) => {
+    await use(new ImporterComponent(page));
   },
 
   partsList: async ({ page }, use) => {

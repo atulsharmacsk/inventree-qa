@@ -326,24 +326,25 @@ None of these pages describes duplicate IPN handling. The local source (`common/
 ### UI-IMPORT-007: Import with a category that does not exist
 - **Priority:** P1
 - **Type:** Negative
-- **Preconditions:** A CSV file whose category value matches no existing category.
+- **Preconditions:** Logged in as a staff user with Part "create" and `change` permissions. A test-owned category. A CSV file (`name`, `description`, `category`) with one row whose category is the test-owned category's name and one row whose category matches no existing category.
 - **Steps:**
-  1. Upload the file and confirm the mappings.
-  2. Review the row states.
-- **Expected result:** See OQ-CREATE-05.
-- **Requirements:** REQ-IM-04
-- **Source:** `docs:concepts/data_import/#mapping-to-existing-data`
+  1. Open *Parts* > *Add Parts* > *Import from File*, upload the file, and submit.
+  2. Accept the suggested column mapping.
+  3. Review the row states, and hover the error icon of the row with the unknown category.
+- **Expected result:** The row with the unknown category is in the *Error* state (red icon); its error list starts with "Row contains errors" and has a `category` error. The row with the existing category has no error. No part is created, because no row has been accepted. The error text is not asserted (DEF-14).
+- **Requirements:** REQ-IM-04, REQ-IM-05
+- **Source:** `docs:concepts/data_import/#mapping-to-existing-data`, `#process-data`; OQ-CREATE-05 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ### UI-IMPORT-008: Import is not permitted for a non-staff user
 - **Priority:** P1
 - **Type:** Negative
-- **Preconditions:** Logged in as a test user who is not staff but has Part "create" and `change` permissions.
+- **Preconditions:** Logged in as a test user who is not staff but has Part "create" and `change` permissions (the `ENGINEER` role: Part view, add, change; view on categories, locations, and stock).
 - **Steps:**
   1. Open the *Parts* view.
-  2. Try to start an import session.
-- **Expected result:** The user cannot import data. See OQ-CREATE-06 for how this is shown.
+  2. Open *Add Parts* and, if *Import from File* is offered, upload a one-row parts CSV and submit.
+- **Expected result:** The user cannot import data: *Import from File* is not offered, or the server rejects the session (4xx). No import session is created.
 - **Requirements:** REQ-IM-02
-- **Source:** `docs:concepts/data_import/#required-permissions`
+- **Source:** `docs:concepts/data_import/#required-permissions`; OQ-CREATE-06 (application finding, confirmed by user, 2026-10-31; DEF-13 in [defects.md](../defects.md))
 
 ### UI-IMPORT-009: Leave and resume an import session
 - **Priority:** P3
@@ -425,8 +426,8 @@ All 21 requirements are covered by at least one case.
 | OQ-CREATE-02 | Is the initial stock section hidden when *Create Initial Stock* is disabled? The documentation only describes the enabled state. | UI-CREATE-010 | Open |
 | OQ-CREATE-03 | Are supplier options hidden for non-Purchaseable parts? The documentation only describes the Purchaseable case. | UI-CREATE-012 | Open |
 | OQ-CREATE-04 | Must names be unique on their own? `part/views/` calls the name "(unique)", but revisions share a name, so uniqueness may combine name, IPN, and revision. | UI-CREATE-014 | Open |
-| OQ-CREATE-05 | How is an unmatched category reported during import (row error or failed mapping)? | UI-IMPORT-007 | Open |
-| OQ-CREATE-06 | How is a non-staff user prevented from importing (menu hidden, or an error on submit)? | UI-IMPORT-008 | Open |
+| OQ-CREATE-05 | How is an unmatched category reported during import (row error or failed mapping)? | UI-IMPORT-007 | Resolved: the column mapping is accepted; after rows load, the row with the unknown category is invalid (*Error* state) with `{"category": ["Incorrect type. Expected pk value, received str."]}`, while a row naming an existing category resolves it by name and is valid. Nothing is imported until a row is accepted. Local 1.6.3, confirmed by user (2026-10-31). The misleading message is recorded as minor finding DEF-14. |
+| OQ-CREATE-06 | How is a non-staff user prevented from importing (menu hidden, or an error on submit)? | UI-IMPORT-008 | Resolved as an application finding: on local 1.6.3 a non-staff user with Part add and change sees *Add Parts > Import from File* and creates a part import session (201). The frontend hides the menu only without Part add, and the backend checks staff status only for other users' sessions. The user confirmed the documented staff requirement is correct (2026-10-31); the case keeps "cannot import" and is automated as an expected failure (DEF-13). |
 | OQ-CREATE-07 | Is a supplier plugin available for the local instance? Without one, UI-IMPORT-012 and UI-IMPORT-013 cannot be run. | UI-IMPORT-012, UI-IMPORT-013 | Open |
 | OQ-CREATE-08 | How are duplicate IPNs handled at creation, with duplicates allowed and not allowed? Is a rejection shown as a form error? The pages read do not describe this behavior or its controlling setting. The local source defines *Allow Duplicate IPN* (`PART_ALLOW_DUPLICATE_IPN`, default enabled) and *IPN Regex* (`PART_IPN_REGEX`); this needs user confirmation before it is used. | UI-CREATE-016 (and API-EDGE-014) | Partly resolved: with `PART_ALLOW_DUPLICATE_IPN` on (its value on local 1.6.3), a duplicate IPN is accepted (API 201) and both parts exist. With it off, the API rejects a duplicate IPN, in any letter case, with 400 `{"IPN": ["Duplicate IPN not allowed in part settings"]}` (API-EDGE-014). Both confirmed by user (2026-10-31). Still open: how the Create Part form shows the rejection (UI-CREATE-016). |
 | OQ-CREATE-09 | What is the default unit? `part/` says blank (pieces); `part/views/` says `pcs`. | None yet (relevant to the Units of measure area) | Open |

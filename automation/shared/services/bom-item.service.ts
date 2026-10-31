@@ -9,6 +9,15 @@ export class BomItemService {
     return this.request.post('/api/bom/', { data: item });
   }
 
+  /** For test setup: adds a BOM line and stops the test if that fails. */
+  async createOrFail(item: NewBomItem): Promise<BomItem> {
+    const response = await this.create(item);
+    if (response.status() !== 201) {
+      throw new Error(`Could not create BOM item: ${response.status()} ${await response.text()}`);
+    }
+    return (await response.json()) as BomItem;
+  }
+
   list(part: number, limit = DEFAULT_PAGE_LIMIT): Promise<APIResponse> {
     return this.request.get('/api/bom/', { params: { part, limit } });
   }

@@ -50,6 +50,19 @@ env:
   ALLURE_HISTORY_KEY: ${{ inputs.environment || 'LOCALHOST' }}-${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && 'manual' || 'smoke' }}
 
 jobs:
+  # Catches workflow YAML mistakes (bad expressions, wrong contexts) that the test jobs would otherwise only reveal after a full run.
+  lint-workflow:
+    name: Lint workflow YAML
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # actions/checkout@v6
+      - name: Install actionlint
+        run: curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz | tar xz actionlint
+      - name: Run actionlint
+        run: ./actionlint -color
+
   # Decides how many shard jobs the matrix below starts: 4 nightly, the `shards` input on manual runs, otherwise 1.
   plan:
     name: Plan shards
@@ -108,6 +121,8 @@ jobs:
       SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
       READER_USERNAME: ${{ secrets.READER_USERNAME }}
       READER_PASSWORD: ${{ secrets.READER_PASSWORD }}
+      ENGINEER_USERNAME: ${{ secrets.ENGINEER_USERNAME }}
+      ENGINEER_PASSWORD: ${{ secrets.ENGINEER_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -155,6 +170,12 @@ jobs:
       - name: Check spec layering
         run: npm run lint:specs
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Cache Playwright browsers
         if: matrix.project == 'ui' && runner.os == 'Linux'
         id: cache-playwright-browsers
@@ -180,6 +201,8 @@ jobs:
           SUPERUSER_PASSWORD: ${{ env.LOCAL_SUPERUSER_PASSWORD || secrets.SUPERUSER_PASSWORD }}
           READER_USERNAME: ${{ env.LOCAL_READER_USERNAME || secrets.READER_USERNAME }}
           READER_PASSWORD: ${{ env.LOCAL_READER_PASSWORD || secrets.READER_PASSWORD }}
+          ENGINEER_USERNAME: ${{ env.LOCAL_ENGINEER_USERNAME || secrets.ENGINEER_USERNAME }}
+          ENGINEER_PASSWORD: ${{ env.LOCAL_ENGINEER_PASSWORD || secrets.ENGINEER_PASSWORD }}
         run: |
           args=()
           # The @smoke default must not apply to a sharded run, or the shards would split only the smoke tests.

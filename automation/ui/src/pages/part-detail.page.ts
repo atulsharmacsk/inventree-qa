@@ -88,10 +88,8 @@ export class PartDetailPage {
   /** BOM tab > Edit BOM > Add BOM Items > Add BOM Item. */
   async openAddBomItemForm(): Promise<BomItemFormComponent> {
     await this.openTab('Bill of Materials');
-    const panel = this.tabPanel('Bill of Materials');
-    // Icon-only toolbar controls expose only their generated aria-labels.
-    await panel.getByRole('button', { name: 'action-button-edit-bom' }).click();
-    await panel.getByRole('button', { name: 'action-menu-add-bom-items' }).click();
+    await this.editBomButton().click();
+    await this.tabPanel('Bill of Materials').getByRole('button', { name: 'action-menu-add-bom-items' }).click();
     await this.page.getByRole('menuitem', { name: 'action-menu-add-bom-items-add-bom-item' }).click();
     const form = new BomItemFormComponent(this.page);
     await form.waitUntilReady();
@@ -101,7 +99,7 @@ export class PartDetailPage {
   /** Parameters tab > Add Parameters > Create Parameter. */
   async openAddParameterForm(): Promise<ParameterFormComponent> {
     await this.openTab('Parameters');
-    await this.tabPanel('Parameters').getByRole('button', { name: 'action-menu-add-parameters' }).click();
+    await this.addParametersMenu().click();
     await this.page.getByRole('menuitem', { name: 'action-menu-add-parameters-create-parameter' }).click();
     const form = new ParameterFormComponent(this.page);
     await form.waitUntilReady();
@@ -120,6 +118,27 @@ export class PartDetailPage {
 
   tabPanel(name: PartTab): Locator {
     return this.page.getByRole('tabpanel', { name });
+  }
+
+  /** The BOM tab's Edit BOM toolbar button. */
+  editBomButton(): Locator {
+    // Icon-only toolbar controls expose only their generated aria-labels.
+    return this.tabPanel('Bill of Materials').getByRole('button', { name: 'action-button-edit-bom' });
+  }
+
+  /** The Parameters tab's Add Parameters menu button. */
+  addParametersMenu(): Locator {
+    return this.tabPanel('Parameters').getByRole('button', { name: 'action-menu-add-parameters' });
+  }
+
+  /** The "Part is Locked" alert shown in a tab when part locking blocks changes. */
+  lockedAlert(tab: PartTab): Locator {
+    return this.tabPanel(tab).getByRole('alert', { name: 'Part is Locked' });
+  }
+
+  /** Row action menus (edit, delete, ...) of the table rows in a tab that contain `text`. */
+  rowActionMenus(tab: PartTab, text: string): Locator {
+    return this.tableRows(tab, text).getByRole('button', { name: /^row-action-menu-/ });
   }
 
   /** Table rows in a tab panel that contain `text`, for example a location or part name. */

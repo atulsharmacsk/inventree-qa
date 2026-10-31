@@ -6,13 +6,13 @@ Application: InvenTree, Parts module. Local instance: InvenTree 1.6.3 at `http:/
 
 | Area | File | ID prefixes | Minimum coverage | Status | P1 | P2 | P3 | Total | Open questions |
 |---|---|---|---|---|---|---|---|---|---|
-| Part creation (manual entry and import) | [part-creation.md](ui/part-creation.md) | `UI-CREATE`, `UI-IMPORT` | Manual entry and import flows | Drafted | 11 | 11 | 7 | 29 | 8 |
+| Part creation (manual entry and import) | [part-creation.md](ui/part-creation.md) | `UI-CREATE`, `UI-IMPORT` | Manual entry and import flows | Drafted | 11 | 11 | 7 | 29 | 6 |
 | Part detail view tabs | [part-detail-tabs.md](ui/part-detail-tabs.md) | `UI-TAB` | Stock, BOM, Allocated, Build Orders, Parameters, Variants, Revisions, Attachments, Related Parts, Test Templates | Drafted | 8 | 13 | 7 | 28 | 8 |
 | Part categories | [part-categories.md](ui/part-categories.md) | `UI-CAT` | Hierarchy, filtering, parametric tables | Drafted | 3 | 10 | 6 | 19 | 7 |
 | Part attributes | [part-attributes.md](ui/part-attributes.md) | `UI-ATTR` | Virtual, Template, Assembly, Component, Trackable, Purchaseable, Salable, Active/Inactive, and how each changes tabs and actions | Drafted | 5 | 9 | 4 | 18 | 7 |
 | Units of measure | [units-of-measure.md](ui/units-of-measure.md) | `UI-UNIT` | Units of measure configuration | Drafted | 3 | 8 | 9 | 20 | 7 |
 | Part revisions | [part-revisions.md](ui/part-revisions.md) | `UI-REV` | Creation; constraints: circular references, unique revision codes, template restrictions | Drafted | 5 | 6 | 3 | 14 | 5 |
-| **Total** | | | | | **35** | **57** | **36** | **128** | **42** |
+| **Total** | | | | | **35** | **57** | **36** | **128** | **40** |
 
 ## Required Negative and Boundary Scenarios
 

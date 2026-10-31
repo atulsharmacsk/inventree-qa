@@ -99,22 +99,27 @@ test.describe('Parts list', () => {
     // Expected to fail until InvenTree returns the documented paginated list without `limit`; turns red once fixed.
     test.fail(
       'API-LIST-004: request without limit',
-      { annotation: { type: 'issue', description: 'Application finding OQ-LIST-02: without limit the server returns a bare array, not the documented paginated object' } },
+      {
+        annotation: {
+          type: 'issue',
+          description: 'Application finding OQ-LIST-02: without limit the server returns a bare array, not the documented paginated object',
+        },
+      },
       async ({ parts, categories }) => {
-      const category = await test.step('Setup: a category with one part', async () => {
-        const category = await categories.createOrFail(newCategory());
-        await parts.createOrFail(newPart({ category: category.pk }));
-        return category;
-      });
+        const category = await test.step('Setup: a category with one part', async () => {
+          const category = await categories.createOrFail(newCategory());
+          await parts.createOrFail(newPart({ category: category.pk }));
+          return category;
+        });
 
-      const response = await test.step('GET /api/part/ with the category and no limit', async () => {
-        return await parts.listWithoutLimit({ category: category.pk });
-      });
+        const response = await test.step('GET /api/part/ with the category and no limit', async () => {
+          return await parts.listWithoutLimit({ category: category.pk });
+        });
 
-      await test.step('Check the response is the documented paginated list', async () => {
-        expect(response.status()).toBe(200);
-        checkPartList(await response.json());
-      });
+        await test.step('Check the response is the documented paginated list', async () => {
+          expect(response.status()).toBe(200);
+          checkPartList(await response.json());
+        });
       },
     );
   });
@@ -169,12 +174,13 @@ test.describe('Parts list', () => {
   test.describe('Filtering', () => {
     for (const flag of PART_FLAGS) {
       test(`API-LIST-007: filter by flag ${flag}`, async ({ parts, categories }) => {
-        const { category, flagged, unflagged } = await test.step(`Setup: a category with one part with ${flag}=true and one with ${flag}=false`, async () => {
-          const category = await categories.createOrFail(newCategory());
-          const flagged = await parts.createOrFail(newPart({ category: category.pk, [flag]: true }));
-          const unflagged = await parts.createOrFail(newPart({ category: category.pk, [flag]: false }));
-          return { category, flagged, unflagged };
-        });
+        const { category, flagged, unflagged } =
+          await test.step(`Setup: a category with one part with ${flag}=true and one with ${flag}=false`, async () => {
+            const category = await categories.createOrFail(newCategory());
+            const flagged = await parts.createOrFail(newPart({ category: category.pk, [flag]: true }));
+            const unflagged = await parts.createOrFail(newPart({ category: category.pk, [flag]: false }));
+            return { category, flagged, unflagged };
+          });
 
         for (const [value, expected] of [
           [true, flagged],
@@ -193,15 +199,16 @@ test.describe('Parts list', () => {
     }
 
     test('API-LIST-008: category filter with and without cascade', async ({ parts, categories }) => {
-      const { parent, child, inParent, inChild } = await test.step('Setup: a category with a sub-category, and a part in each', async () => {
-        const parent = await categories.createOrFail(newCategory());
-        const child = await categories.createOrFail(newCategory({ parent: parent.pk }));
-        const inParent = await parts.createOrFail(newPart({ category: parent.pk }));
-        const inChild = await parts.createOrFail(newPart({ category: child.pk }));
-        return { parent, child, inParent, inChild };
-      });
+      const { parent, child, inParent, inChild } =
+        await test.step('Setup: a category with a sub-category, and a part in each', async () => {
+          const parent = await categories.createOrFail(newCategory());
+          const child = await categories.createOrFail(newCategory({ parent: parent.pk }));
+          const inParent = await parts.createOrFail(newPart({ category: parent.pk }));
+          const inChild = await parts.createOrFail(newPart({ category: child.pk }));
+          return { parent, child, inParent, inChild };
+        });
 
-      const rows: { filters: PartFilters; expected: typeof inParent[] }[] = [
+      const rows: { filters: PartFilters; expected: (typeof inParent)[] }[] = [
         { filters: { category: parent.pk, cascade: true }, expected: [inParent, inChild] },
         { filters: { category: parent.pk, cascade: false }, expected: [inParent] },
         { filters: { category: child.pk, cascade: true }, expected: [inChild] },
@@ -221,23 +228,29 @@ test.describe('Parts list', () => {
     // Expected to fail until category=null returns only uncategorized parts with the default cascade; turns red once fixed.
     test.fail(
       'API-LIST-009: parts without a category',
-      { annotation: { type: 'issue', description: 'Application finding OQ-LIST-06: with the default cascade=true, category=null returns every part' } },
+      {
+        annotation: {
+          type: 'issue',
+          description: 'Application finding OQ-LIST-06: with the default cascade=true, category=null returns every part',
+        },
+      },
       async ({ parts, categories }) => {
-      const token = uniqueName('pw-list');
-      const { uncategorized } = await test.step('Setup: a part with no category and a part in a category, sharing a name token', async () => {
-        const category = await categories.createOrFail(newCategory());
-        const uncategorized = await parts.createOrFail(newPart({ name: `${token}-uncategorized` }));
-        await parts.createOrFail(newPart({ name: `${token}-categorized`, category: category.pk }));
-        return { uncategorized };
-      });
+        const token = uniqueName('pw-list');
+        const { uncategorized } =
+          await test.step('Setup: a part with no category and a part in a category, sharing a name token', async () => {
+            const category = await categories.createOrFail(newCategory());
+            const uncategorized = await parts.createOrFail(newPart({ name: `${token}-uncategorized` }));
+            await parts.createOrFail(newPart({ name: `${token}-categorized`, category: category.pk }));
+            return { uncategorized };
+          });
 
-      const response = await test.step('GET /api/part/ with category=null and the token', async () => {
-        return await parts.listFiltered({ category: 'null', search: token });
-      });
+        const response = await test.step('GET /api/part/ with category=null and the token', async () => {
+          return await parts.listFiltered({ category: 'null', search: token });
+        });
 
-      await test.step('Check only the part without a category is returned', async () => {
-        await expectPartsListed(response, [uncategorized]);
-      });
+        await test.step('Check only the part without a category is returned', async () => {
+          await expectPartsListed(response, [uncategorized]);
+        });
       },
     );
 
@@ -250,7 +263,7 @@ test.describe('Parts list', () => {
         return { category, alpha, beta };
       });
 
-      const rows: { filters: PartFilters; expected: typeof alpha[] }[] = [
+      const rows: { filters: PartFilters; expected: (typeof alpha)[] }[] = [
         { filters: { IPN: `${token}-100` }, expected: [alpha] },
         { filters: { IPN_regex: '100$' }, expected: [alpha] },
         { filters: { IPN_regex: '-100' }, expected: [alpha, beta] },
@@ -293,16 +306,17 @@ test.describe('Parts list', () => {
     // Whether `low_stock` includes a part with no stock at all is OQ-LIST-05, so that part is not asserted.
     test('API-LIST-012: stock and low-stock filters', async ({ parts, categories, stockLocations, stockItems }) => {
       const minimumStock = 10;
-      const { category, lowStock, atMinimum } = await test.step('Setup: parts with minimum stock 10 and no stock, stock 5, and stock 10', async () => {
-        const category = await categories.createOrFail(newCategory());
-        const location = await stockLocations.createOrFail(newStockLocation());
-        await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
-        const lowStock = await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
-        const atMinimum = await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
-        await stockItems.createOrFail(newStockItem(lowStock.pk, { quantity: 5, location: location.pk }));
-        await stockItems.createOrFail(newStockItem(atMinimum.pk, { quantity: minimumStock, location: location.pk }));
-        return { category, lowStock, atMinimum };
-      });
+      const { category, lowStock, atMinimum } =
+        await test.step('Setup: parts with minimum stock 10 and no stock, stock 5, and stock 10', async () => {
+          const category = await categories.createOrFail(newCategory());
+          const location = await stockLocations.createOrFail(newStockLocation());
+          await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
+          const lowStock = await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
+          const atMinimum = await parts.createOrFail(newPart({ category: category.pk, minimum_stock: minimumStock }));
+          await stockItems.createOrFail(newStockItem(lowStock.pk, { quantity: 5, location: location.pk }));
+          await stockItems.createOrFail(newStockItem(atMinimum.pk, { quantity: minimumStock, location: location.pk }));
+          return { category, lowStock, atMinimum };
+        });
 
       const hasStockResponse = await test.step('GET /api/part/ with has_stock=true', async () => {
         return await parts.listFiltered({ category: category.pk, has_stock: true });
@@ -381,11 +395,12 @@ test.describe('Parts list', () => {
     ]) {
       test(`API-LIST-015: order by ${ordering}`, async ({ parts, categories }) => {
         const token = uniqueName('pw-list');
-        const category = await test.step('Setup: a category with parts <token>-b, <token>-a, <token>-c, created in that order', async () => {
-          const category = await categories.createOrFail(newCategory());
-          for (const suffix of ['b', 'a', 'c']) await parts.createOrFail(newPart({ category: category.pk, name: `${token}-${suffix}` }));
-          return category;
-        });
+        const category =
+          await test.step('Setup: a category with parts <token>-b, <token>-a, <token>-c, created in that order', async () => {
+            const category = await categories.createOrFail(newCategory());
+            for (const suffix of ['b', 'a', 'c']) await parts.createOrFail(newPart({ category: category.pk, name: `${token}-${suffix}` }));
+            return category;
+          });
 
         const response = await test.step(`GET /api/part/ with category and ordering=${ordering}`, async () => {
           return await parts.listFiltered({ category: category.pk, ordering });

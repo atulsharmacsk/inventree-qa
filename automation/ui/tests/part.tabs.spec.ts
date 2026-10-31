@@ -11,7 +11,7 @@ test.describe('Part detail view tabs', () => {
   test.use({ role: 'SUPERUSER' });
 
   test.describe('Stock', () => {
-    test('UI-TAB-005: the Stock tab lists the part\'s stock items', async ({ parts, stockItems, stockLocations, partDetail }) => {
+    test("UI-TAB-005: the Stock tab lists the part's stock items", async ({ parts, stockItems, stockLocations, partDetail }) => {
       const { part, stock } = await test.step('Setup: part with two stock items in different locations', async () => {
         const part = await parts.createOrFail(newPart());
         const first = await stockLocations.createOrFail(newStockLocation());
@@ -83,17 +83,18 @@ test.describe('Part detail view tabs', () => {
     });
 
     test('UI-TAB-009: template stock includes variant stock', async ({ parts, stockItems, partDetail }) => {
-      const { template, variants } = await test.step('Setup: template with two variants, each with stock; the template has none', async () => {
-        const template = await parts.createOrFail(newPart({ is_template: true }));
-        const variants = [
-          { part: await parts.createOrFail(newPart({ variant_of: template.pk })), quantity: 4 },
-          { part: await parts.createOrFail(newPart({ variant_of: template.pk })), quantity: 6 },
-        ];
-        for (const { part, quantity } of variants) {
-          await stockItems.createOrFail(newStockItem(part.pk, { quantity }));
-        }
-        return { template, variants };
-      });
+      const { template, variants } =
+        await test.step('Setup: template with two variants, each with stock; the template has none', async () => {
+          const template = await parts.createOrFail(newPart({ is_template: true }));
+          const variants = [
+            { part: await parts.createOrFail(newPart({ variant_of: template.pk })), quantity: 4 },
+            { part: await parts.createOrFail(newPart({ variant_of: template.pk })), quantity: 6 },
+          ];
+          for (const { part, quantity } of variants) {
+            await stockItems.createOrFail(newStockItem(part.pk, { quantity }));
+          }
+          return { template, variants };
+        });
 
       await test.step('Open the template > Stock tab', async () => {
         await partDetail.goto(template.pk);
@@ -142,7 +143,40 @@ test.describe('Part detail view tabs', () => {
       });
     });
 
-    test.fixme('UI-TAB-013: BOM of a locked assembly cannot be changed (blocked by OQ-TAB-07)', async () => {});
+    test('UI-TAB-013: BOM of a locked assembly cannot be changed', async ({ parts, bomItems, settings, partDetail }) => {
+      const lockingEnabled = await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/', async () => {
+        return await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
+      });
+      test.skip(!lockingEnabled, 'UI-TAB-013 needs part locking (PART_ENABLE_LOCKING), which is disabled on this instance');
+      const quantity = 2;
+
+      const { assembly, component } =
+        await test.step(`Setup: assembly with one BOM line (quantity ${quantity}), then PATCH locked=true`, async () => {
+          const assembly = await parts.createOrFail(newPart({ assembly: true }));
+          const component = await parts.createOrFail(newPart({ component: true }));
+          await bomItems.createOrFail({ part: assembly.pk, sub_part: component.pk, quantity });
+          await parts.updateOrFail(assembly.pk, { locked: true });
+          return { assembly, component };
+        });
+
+      await test.step('Open the assembly > BOM tab', async () => {
+        await partDetail.goto(assembly.pk);
+        await partDetail.openTab('Bill of Materials');
+        await partDetail.waitForTable('Bill of Materials');
+      });
+
+      await test.step('Check the "Part is Locked" alert is shown and add, edit, and delete are not offered', async () => {
+        await expect(partDetail.lockedAlert('Bill of Materials')).toBeVisible();
+        await expect(partDetail.tableRows('Bill of Materials', component.name)).toHaveCount(1);
+        await expect(partDetail.editBomButton()).toHaveCount(0);
+        await expect(partDetail.rowActionMenus('Bill of Materials', component.name)).toHaveCount(0);
+      });
+
+      await test.step('Check the BOM still has its original single line', async () => {
+        const bom = await bomItems.listOrFail(assembly.pk);
+        expect(bom.results.map(({ sub_part, quantity }) => ({ sub_part, quantity }))).toEqual([{ sub_part: component.pk, quantity }]);
+      });
+    });
   });
 
   test.describe('Parameters', () => {
@@ -176,7 +210,44 @@ test.describe('Part detail view tabs', () => {
       });
     });
 
-    test.fixme('UI-TAB-018: parameters of a locked part cannot be changed (blocked by OQ-TAB-07)', async () => {});
+    test('UI-TAB-018: parameters of a locked part cannot be changed', async ({ parts, parameters, settings, partDetail }) => {
+      const lockingEnabled = await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/', async () => {
+        return await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
+      });
+      test.skip(!lockingEnabled, 'UI-TAB-018 needs part locking (PART_ENABLE_LOCKING), which is disabled on this instance');
+      const value = uniqueName('value');
+
+      const { part, template } = await test.step(`Setup: part with one parameter (${value}), then PATCH locked=true`, async () => {
+        const part = await parts.createOrFail(newPart());
+        const template = await parameters.createTemplateOrFail(newParameterTemplate());
+        await parameters.createOrFail({
+          model_type: PART_MODEL_TYPE,
+          model_id: part.pk,
+          template: template.pk,
+          data: value,
+        });
+        await parts.updateOrFail(part.pk, { locked: true });
+        return { part, template };
+      });
+
+      await test.step('Open the part > Parameters tab', async () => {
+        await partDetail.goto(part.pk);
+        await partDetail.openTab('Parameters');
+        await partDetail.waitForTable('Parameters');
+      });
+
+      await test.step('Check the "Part is Locked" alert is shown and add, edit, and delete are not offered', async () => {
+        await expect(partDetail.lockedAlert('Parameters')).toBeVisible();
+        await expect(partDetail.tableRows('Parameters', template.name)).toHaveCount(1);
+        await expect(partDetail.addParametersMenu()).toHaveCount(0);
+        await expect(partDetail.rowActionMenus('Parameters', template.name)).toHaveCount(0);
+      });
+
+      await test.step('Check the part still has its original parameter and value', async () => {
+        const saved = await parameters.listOrFail({ model_type: PART_MODEL_TYPE, model_id: part.pk });
+        expect(saved.results.map(({ template, data }) => ({ template, data }))).toEqual([{ template: template.pk, data: value }]);
+      });
+    });
   });
 
   test.describe('Variants', () => {

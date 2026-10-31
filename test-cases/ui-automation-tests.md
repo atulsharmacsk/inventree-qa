@@ -23,7 +23,7 @@ Part attributes is ordered before Part categories because Part CRUD automation (
 | # | Command | Spec file | Cases | Status |
 |---|---|---|---|---|
 | A | `/ui-automation Setup: auth, fixtures, page objects, redaction` | tests/auth.setup.ts, tests/fixtures.ts, tests/smoke.spec.ts | Framework only; smoke checks SMOKE-001, SMOKE-002 | Done (3 passed) |
-| B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005; fixme: 009 (setting), 013 (non-superuser), UI-IMPORT-007 (OQ-CREATE-05), UI-IMPORT-008 (OQ-CREATE-06); deferred: UI-IMPORT-002, 004 (file upload) | Done (3 passed, 4 fixme) |
+| B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005; fixme: 009 (setting), 013 (non-superuser); UI-IMPORT-007 runs (OQ-CREATE-05 resolved, 2026-10-31); UI-IMPORT-008 is `test.fail` with role `ENGINEER` (DEF-13, 2026-10-31); deferred: UI-IMPORT-002, 004 (file upload) | Done (3 passed, 4 fixme) |
 | C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR-008, 012 (edit form, deactivate), 013 (inactive part not offered by 4 part pickers; OQ-ATTR-05 confirmed 2026-10-31; Stock tab variant is `test.fail`, application finding), 016 (delete inactive part), 017 (skips itself when `PART_ENABLE_LOCKING` is off) | Done (8 passed, 1 expected failure) |
 | D | `/ui-automation Part detail view tabs P1` | tests/part.tabs.spec.ts | UI-TAB-005, 006, 009, 011, 015, 019; fixme: 013, 018 (part locking setting) | Done (6 passed, 2 fixme) |
 | E | `/ui-automation Cross-functional flow` | tests/part.flow.spec.ts | UI-CREATE-015: create part, add parameter, create stock, verify in category view | Done (1 passed) |

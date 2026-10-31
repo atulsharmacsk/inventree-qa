@@ -1,6 +1,6 @@
 // Users the tests can act as. A role's credentials come from <ROLE>_USERNAME / <ROLE>_PASSWORD.
 
-export const ROLES = ['SUPERUSER', 'READER'] as const;
+export const ROLES = ['SUPERUSER', 'READER', 'ENGINEER'] as const;
 
 export type Role = (typeof ROLES)[number];
 

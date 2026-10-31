@@ -77,7 +77,12 @@ test.describe('Edge cases', () => {
     // Expected to fail until InvenTree rejects malformed JSON with 400 instead of 500; turns red once fixed.
     test.fail(
       'API-EDGE-007: send a malformed JSON body',
-      { annotation: { type: 'issue', description: 'Application finding OQ-EDGE-02: malformed JSON returns 500 (AttributeError) instead of 400' } },
+      {
+        annotation: {
+          type: 'issue',
+          description: 'Application finding OQ-EDGE-02: malformed JSON returns 500 (AttributeError) instead of 400',
+        },
+      },
       async ({ parts }) => {
         const token = uniqueName('pw-edge');
 
@@ -208,7 +213,7 @@ test.describe('Edge cases', () => {
     // API-EDGE-012 (locking disabled) is in parts.settings.spec.ts, because it switches PART_ENABLE_LOCKING off.
 
     // OQ-EDGE-05 (confirmed by the user): locking blocks delete, BOM, and parameters, not field edits; the schema text is a documentation defect.
-    test('API-EDGE-013: edit a locked part\'s fields', async ({ parts }) => {
+    test("API-EDGE-013: edit a locked part's fields", async ({ parts }) => {
       const part = await test.step('Setup: POST /api/part/ with locked=true and a known description', async () => {
         return await parts.createOrFail(newPart({ locked: true, description: 'Original description' }));
       });
@@ -248,7 +253,12 @@ test.describe('Edge cases', () => {
     const DUPLICATE_NAME_ROWS = [
       { label: 'the same name under the same parent', underParent: true, upperCase: false, accepted: false },
       { label: 'the same name at the top level', underParent: false, upperCase: false, accepted: true },
-      { label: 'the same name in upper case under the same parent', underParent: true, upperCase: true, accepted: true },
+      {
+        label: 'the same name in upper case under the same parent',
+        underParent: true,
+        upperCase: true,
+        accepted: true,
+      },
     ];
 
     for (const { label, underParent, upperCase, accepted } of DUPLICATE_NAME_ROWS) {

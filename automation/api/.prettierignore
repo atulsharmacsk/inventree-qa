@@ -1,0 +1,10 @@
+allure-results/
+allure-report/
+allure-history/
+playwright-report/
+test-results/
+# Hand-maintained JSON and markdown; Prettier's reflow would move content, not just whitespace.
+*.md
+schemas/
+tsconfig.json
+package-lock.json
