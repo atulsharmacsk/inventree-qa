@@ -35,7 +35,7 @@ This table describes the current layout. Check the files before adding a layer, 
 - Assert status codes, response schema (required properties and their types), and business effects (re-read the record after a write).
 - Use data-driven loops over typed tables for flags, validation, boundaries, and filters. Generated titles must be unique.
 - Use `test.fixme('<CASE-ID>: ... (blocked by OQ-...)')` for cases blocked by an open question. Use `test.fail` with an annotation for a user-confirmed application finding. Never weaken an assertion to make a test pass.
-- API tests: reuse `authenticatedRequest`. It is wrapped by `src/http-logging.ts`, which attaches every request and response (method, URL, params, body, status) to the step that made it, with secrets hidden and auth headers omitted. For unauthenticated cases, add a fixture with a credential-free context instead of changing the existing one.
+- API tests: reuse `authenticatedRequest`. It is wrapped by `shared/http-logging.ts`, which attaches every request and response (method, URL, params, body, status) to the step that made it, with secrets hidden and auth headers omitted. The UI project's `apiRequest` (setup and cleanup) uses the same wrapper. For unauthenticated cases, add a fixture with a credential-free context instead of changing the existing one.
 - UI tests: use accessible locators (`getByRole`, `getByLabel`, `getByText`), then test IDs. Use CSS only with a comment explaining why. Use web-first assertions and condition-based waits; never use fixed sleeps.
 - Create uniquely named, test-owned data through factories, and clean up only that data. Tests must run independently and in parallel, with no state shared between them.
 - Only tests in `tests/*.settings.spec.ts` may change a global setting, and only through the `globalSetting` fixture, which restores the original value and fails the test if the restore fails. Those files run in the `settings` project, which runs after all other tests, and skip unless `ENV=LOCALHOST`, so the shared demo is never changed. Every other test reads settings as preconditions only.
@@ -47,7 +47,7 @@ This table describes the current layout. Check the files before adding a layer, 
 - No magic values in specs: put endpoints in services, field lists in models, and defaults in factories.
 - Naming: `*.service.ts`, `*.page.ts`, `*.component.ts`, `*.assertions.ts`, `*.spec.ts`; specs use camelCase variables named after the domain (`parts`, `category`).
 - Keep functions small and single-purpose. Write a comment only to explain why, in one line.
-- Never commit `test.only`. Workers and retries come only from the `WORKERS` and `RETRIES` build parameters (`automation/shared/run-options.ts`); keep the config defaults (retries 0, UI workers 1) and never hard-code retries in a spec or config. Treat a test that passes only on retry (`flaky`) as a defect to investigate, not a pass. If the local instance is unreliable under parallel load, lower `workers` and record it as an environment issue.
+- Never commit `test.only`. Workers and retries come only from the `WORKERS` and `RETRIES` build parameters (`automation/shared/run-options.ts`); keep the config defaults (workers 2, retries 2, set in `run-options.ts` and the configs by user decision on 2026-10-31) and never hard-code retries in a spec. Treat a test that passes only on retry (`flaky`) as a defect to investigate, not a pass. If the local instance is unreliable under parallel load, lower `workers` and record it as an environment issue.
 
 ## Artifacts and secrets
 

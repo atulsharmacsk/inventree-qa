@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse, TestInfo } from '@playwright/test';
-import { hideSecrets } from '../../shared/redaction';
+import { hideSecrets } from './redaction';
 
 type RequestOptions = Parameters<APIRequestContext['fetch']>[1];
 

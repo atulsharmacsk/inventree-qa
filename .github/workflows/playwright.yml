@@ -23,11 +23,11 @@ on:
         type: string
         default: '@smoke'
       workers:
-        description: 'Parallel workers: a number or percentage (50%). Empty uses 2 on REMOTE and 1 on LOCALHOST (parallel category writes corrupt the InvenTree category tree, see README)'
+        description: 'Parallel workers: a number or percentage (50%). Empty uses 2. On LOCALHOST use 1 if category tests fail: parallel category writes can corrupt the InvenTree category tree (see README)'
         type: string
         default: ''
       retries:
-        description: 'Retries per failed test. Empty uses 2 on REMOTE (the shared demo drops requests) and 0 on LOCALHOST. Tests that pass only on retry are reported as flaky'
+        description: 'Retries per failed test. Empty uses 2. Tests that pass only on retry are reported as flaky'
         type: string
         default: ''
       shards:
@@ -44,6 +44,10 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  # Separate Allure history per environment and run type, so trends compare like with like (nightly full, manual, smoke).
+  ALLURE_HISTORY_KEY: ${{ inputs.environment || 'LOCALHOST' }}-${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && 'manual' || 'smoke' }}
 
 jobs:
   # Decides how many shard jobs the matrix below starts: 4 nightly, the `shards` input on manual runs, otherwise 1.
@@ -95,10 +99,9 @@ jobs:
       FULL_RUN: ${{ github.event_name == 'schedule' }}
       SHARD: ${{ matrix.shard }}
       SHARD_TOTAL: ${{ needs.plan.outputs.total }}
-      # REMOTE: 2 workers and 2 retries, because the shared demo slows down and drops requests under load.
-      # LOCALHOST: 1 worker and no retries; parallel category writes corrupt the InvenTree category tree (README finding).
-      WORKERS: ${{ inputs.workers || (inputs.environment == 'REMOTE' && '2') || '1' }}
-      RETRIES: ${{ inputs.retries || (inputs.environment == 'REMOTE' && '2') || '0' }}
+      # 2 workers and 2 retries by default. On LOCALHOST, parallel category writes can corrupt the category tree (README finding).
+      WORKERS: ${{ inputs.workers || '2' }}
+      RETRIES: ${{ inputs.retries || '2' }}
       # Tests pick their role in code; a role without secrets in this environment is skipped.
       SUPERUSER_USERNAME: ${{ secrets.SUPERUSER_USERNAME }}
       SUPERUSER_PASSWORD: ${{ secrets.SUPERUSER_PASSWORD }}
@@ -188,26 +191,143 @@ jobs:
         working-directory: ${{ env.INVENTREE_COMPOSE_DIR }}
         run: docker compose logs --tail 200 inventree-server
 
-      # Traces in these folders are already scrubbed by src/global-teardown.ts.
+      # Single job: publish the final reports directly. Traces are already scrubbed by src/global-teardown.ts.
       - name: Upload Playwright report
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.plan.outputs.total == '1' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.project }}-shard-${{ matrix.shard }}
-          path: |
-            automation/${{ matrix.project }}/playwright-report/
-            automation/${{ matrix.project }}/test-results/
-          retention-days: 7
+          name: playwright-report-${{ matrix.project }}
+          path: automation/${{ matrix.project }}/playwright-report/
+          retention-days: 14
+          overwrite: true
+
+      # Latest history of this project and run type; a new key is saved after each report.
+      - name: Restore Allure history
+        if: ${{ !cancelled() && needs.plan.outputs.total == '1' }}
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # actions/cache@v5
+        with:
+          path: automation/${{ matrix.project }}/allure-history
+          key: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-
 
       - name: Generate Allure report
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.plan.outputs.total == '1' }}
         run: npm run allure:generate
 
-      # Trace attachments in allure-results are scrubbed by src/global-teardown.ts before the report is built.
+      - name: Save Allure history
+        if: ${{ !cancelled() && needs.plan.outputs.total == '1' && hashFiles(format('automation/{0}/allure-history/history.jsonl', matrix.project)) != '' }}
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # actions/cache@v5
+        with:
+          path: automation/${{ matrix.project }}/allure-history
+          key: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Upload Allure report
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.plan.outputs.total == '1' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
         with:
-          name: allure-report-${{ matrix.project }}-shard-${{ matrix.shard }}
+          name: allure-report-${{ matrix.project }}
           path: automation/${{ matrix.project }}/allure-report/
-          retention-days: 7
+          retention-days: 14
+          overwrite: true
+
+      # Sharded: upload raw results for merge-reports. The blob reporter packs traces after global-teardown has scrubbed them.
+      # overwrite: re-running a failed shard replaces its own upload instead of failing on the existing name.
+      - name: Upload blob report
+        if: ${{ !cancelled() && needs.plan.outputs.total != '1' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.project }}-shard-${{ matrix.shard }}
+          path: automation/${{ matrix.project }}/blob-report/
+          retention-days: 1
+          overwrite: true
+
+      - name: Upload Allure results
+        if: ${{ !cancelled() && needs.plan.outputs.total != '1' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ matrix.project }}-shard-${{ matrix.shard }}
+          path: automation/${{ matrix.project }}/allure-results/
+          retention-days: 1
+          overwrite: true
+
+  # Sharded runs only: combines every shard of a project into one HTML and one Allure report, even if some shards failed.
+  merge-reports:
+    name: Merge ${{ matrix.project }} reports
+    if: ${{ !cancelled() && needs.plan.outputs.total != '1' }}
+    needs: [plan, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [api, ui]
+    defaults:
+      run:
+        shell: bash
+        working-directory: automation/${{ matrix.project }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: automation/${{ matrix.project }}/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+        timeout-minutes: 5
+
+      # Blob file names contain the shard number, so the shards do not overwrite each other.
+      - name: Download blob reports
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # actions/download-artifact@v5
+        with:
+          path: automation/${{ matrix.project }}/all-blob-reports
+          pattern: blob-report-${{ matrix.project }}-shard-*
+          merge-multiple: true
+
+      # Allure result files have unique (UUID) names, so the shards merge into one folder.
+      - name: Download Allure results
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # actions/download-artifact@v5
+        with:
+          path: automation/${{ matrix.project }}/allure-results
+          pattern: allure-results-${{ matrix.project }}-shard-*
+          merge-multiple: true
+
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Restore Allure history
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # actions/cache@v5
+        with:
+          path: automation/${{ matrix.project }}/allure-history
+          key: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-
+
+      - name: Generate Allure report
+        run: npm run allure:generate
+
+      - name: Save Allure history
+        if: ${{ hashFiles(format('automation/{0}/allure-history/history.jsonl', matrix.project)) != '' }}
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # actions/cache@v5
+        with:
+          path: automation/${{ matrix.project }}/allure-history
+          key: allure-history-${{ matrix.project }}-${{ env.ALLURE_HISTORY_KEY }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: automation/${{ matrix.project }}/playwright-report/
+          retention-days: 14
+          overwrite: true
+
+      - name: Upload Allure report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ matrix.project }}
+          path: automation/${{ matrix.project }}/allure-report/
+          retention-days: 14
+          overwrite: true

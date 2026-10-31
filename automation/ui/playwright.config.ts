@@ -17,11 +17,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: retriesFromEnv(),
-  // Default 1: the local Docker instance drops requests (for example /api/user/me/) with parallel browsers, which logs the page out.
-  workers: workersFromEnv(1),
+  // Default 2; with parallel browsers the local Docker instance can drop /api/user/me/ and log the page out (set WORKERS=1 if so).
+  workers: workersFromEnv(2),
   reporter: [
     ['list'],
-    ['html', { open: 'never' }],
+    // Sharded CI runs (SHARD_TOTAL > 1) write a blob report; the workflow's merge-reports job combines them into one HTML report.
+    Number(process.env.SHARD_TOTAL ?? 1) > 1 ? ['blob'] : ['html', { open: 'never' }],
     ['allure-playwright', { resultsDir: path.resolve(__dirname, 'allure-results') }],
   ],
   use: {
