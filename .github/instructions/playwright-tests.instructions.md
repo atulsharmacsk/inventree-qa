@@ -52,7 +52,7 @@ This table describes the current layout. Check the files before adding a layer, 
 ## Artifacts and secrets
 
 - Traces are enabled (`retain-on-failure`). Each project's `src/global-teardown.ts` rewrites every `trace.zip` in `test-results/` and `playwright-report/` to scrub tokens, basic-auth headers, session and CSRF cookies, token response bodies, and the configured password. If you add a new auth mechanism or secret, extend `automation/shared/redaction.ts` and re-verify by scanning the trace zips.
-- UI: log in once in a setup project and reuse storage state; never log in inside specs. Keep redaction in place before enabling UI traces, screenshots, or video.
+- UI: log in once in a global setup (not a setup project, which a sharded report lists once per shard) and reuse storage state; never log in inside specs. Keep redaction in place before enabling UI traces, screenshots, or video.
 - Do not leave scratch files (for example `*.tmp.ts`) in the projects.
 - Never print tokens, credentials, or full auth responses in logs, annotations, or error messages.
 

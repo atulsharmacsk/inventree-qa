@@ -15,8 +15,9 @@ export default defineConfig({
   timeout: 120_000,
   // Tables show a spinner first, and the demo or a fresh CI instance can take several seconds to fill them.
   expect: { timeout: 10_000 },
+  // Clears allure-results and logs in once per role; see src/global-setup.ts.
+  globalSetup: './src/global-setup.ts',
   // Redacts session cookies, CSRF tokens, auth headers, and the password before the HTML report copies traces.
-  globalSetup: '../shared/clear-allure-results.ts',
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -37,11 +38,9 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'ui',
-      testIgnore: [/auth\.setup\.ts/, /\.settings\.spec\.ts$/],
-      dependencies: ['setup'],
+      testIgnore: [/\.settings\.spec\.ts$/],
       // `settings` runs after every `ui` test, so a test that changes a global setting never overlaps another test.
       ...(RUN_SETTINGS ? { teardown: 'settings' } : {}),
       // Storage state is chosen per test from the `role` fixture in tests/fixtures.ts.
@@ -50,7 +49,6 @@ export default defineConfig({
     ...(RUN_SETTINGS
       ? [
           {
-            // Teardown of `ui`, so it cannot depend on `setup`; it reuses the sessions `ui` already required.
             name: 'settings',
             testMatch: /\.settings\.spec\.ts$/,
             fullyParallel: false,
