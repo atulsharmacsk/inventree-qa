@@ -46,7 +46,13 @@ export class ManufacturerPartService {
         continue;
       }
       const items = ((await response.json()) as Page<ManufacturerPart>).results;
-      failures.push(...(await deleteEach(items.map((item) => item.pk), 'manufacturer part', (id) => this.delete(id))));
+      failures.push(
+        ...(await deleteEach(
+          items.map((item) => item.pk),
+          'manufacturer part',
+          (id) => this.delete(id),
+        )),
+      );
     }
     this.partIds = [];
     return failures;
