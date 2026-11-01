@@ -142,21 +142,21 @@ None of these pages describes duplicate IPN handling. The local source (`common/
 ### UI-CREATE-009: Create a part with initial stock
 - **Priority:** P1
 - **Type:** Positive
-- **Preconditions:** The *Create Initial Stock* setting is enabled. A test-owned stock location exists.
+- **Preconditions:** The *Initial Stock Data* setting (`PART_CREATE_INITIAL`) is enabled. A test-owned stock location exists.
 - **Steps:**
   1. Open *Add Parts* > *Create Part*.
   2. Fill in the required fields.
-  3. Check *Create Initial Stock* and enter a quantity and the location.
+  3. In the *Initial Stock* section, enter a quantity and the location.
   4. Submit.
   5. Open the part's *Stock* tab.
 - **Expected result:** The part is created, and a stock item with the entered quantity exists at the location.
 - **Requirements:** REQ-CR-05
-- **Source:** `docs:part/create/#initial-stock`
+- **Source:** `docs:part/create/#initial-stock`; step 3 and the setting name: local 1.6.3, confirmed by user (2026-11-01). The form has no *Create Initial Stock* checkbox, unlike the documentation (DEF-16).
 
 ### UI-CREATE-010: Initial stock section when the setting is disabled
 - **Priority:** P3
 - **Type:** Negative
-- **Preconditions:** The *Create Initial Stock* setting is disabled.
+- **Preconditions:** The *Initial Stock Data* setting (`PART_CREATE_INITIAL`) is disabled.
 - **Steps:**
   1. Open *Add Parts* > *Create Part*.
   2. Look for the initial stock section.

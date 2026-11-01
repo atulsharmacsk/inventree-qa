@@ -218,7 +218,7 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 - **Priority:** P1
 - **Type:** Boundary
 - **Automation candidate:** Yes
-- **Preconditions:** Test-owned category `G`; test-owned category `T` under `G`; test-owned sub-category `C` under `T`; test-owned active part `X` in `T` and active part `Y` in `C`.
+- **Preconditions:** Test-owned category `G`; test-owned category `T` under `G`; test-owned sub-category `C` under `T`; test-owned inactive part `X` in `T` and inactive part `Y` in `C`. The parts are inactive so that this case checks only the flags; active parts are covered by API-CAT-017.
 - **Request:** For each row, `DELETE /api/part/category/{T id}/` with the row's flags, then `GET /api/part/category/{C id}/`, `GET /api/part/{X id}/`, and `GET /api/part/{Y id}/`.
 
   | `delete_parts` | `delete_child_categories` | Sub-category `C` | Part `X` (in `T`) | Part `Y` (in `C`) |
@@ -232,7 +232,18 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 - **Expected business result:** As in the table: kept records move up to the deleted category's parent. No data outside the test-owned records changes.
 - **Requirements:** REQ-ACAT-07, REQ-ACAT-09
 - **Sources:** schema `DELETE /api/part/category/{id}/`; OQ-ACAT-06 (local 1.6.3, confirmed by user, 2026-10-31)
-- **Open question:** OQ-ACAT-07 (`delete_parts=true` deletes active parts).
+
+### API-CAT-017: Deleting a category with `delete_parts=true` does not delete an active part
+- **Priority:** P1
+- **Type:** Negative
+- **Automation candidate:** Yes (expected failure, DEF-15)
+- **Preconditions:** Test-owned category `T` with test-owned active part `X`.
+- **Request:** `DELETE /api/part/category/{T id}/` with `{"delete_parts": true, "delete_child_categories": false}`, then `GET /api/part/{X id}/`.
+- **Expected status:** 4xx for the `DELETE` (the schema documents only 204, so no code is specified); 200 for the `GET`.
+- **Expected business result:** `X` is not deleted and stays active, as for `DELETE /api/part/{id}/` on an active part (API-PART-011). An active part cannot be deleted.
+- **Requirements:** REQ-ACAT-07
+- **Sources:** `docs:part/#active-parts`; schema `DELETE /api/part/category/{id}/`; OQ-ACAT-07 (application finding, confirmed by user, 2026-11-01)
+- **Actual (local 1.6.3):** 204, and `X` is deleted (404). See DEF-15.
 
 ### API-CAT-016: Operations on a category that does not exist
 - **Priority:** P2
@@ -252,8 +263,8 @@ Covers creating, retrieving, updating, and deleting part categories through the 
 | Create | 3 | 0 | 1 | 4 |
 | Read | 1 | 1 | 2 | 4 |
 | Update | 1 | 4 | 0 | 5 |
-| Delete | 2 | 1 | 0 | 3 |
-| **Total** | **7** | **6** | **3** | **16** |
+| Delete | 3 | 1 | 0 | 4 |
+| **Total** | **8** | **6** | **3** | **17** |
 
 All 10 requirements are covered by at least one case. REQ-ACAT-10 is covered only for the flag value; its part-assignment rule is covered in Relational integrity.
 
@@ -267,4 +278,4 @@ All 10 requirements are covered by at least one case. REQ-ACAT-10 is covered onl
 | OQ-ACAT-04 | How do `PATCH` and `PUT` on the list endpoint `/api/part/category/` select which categories to update? | Not covered | Open |
 | OQ-ACAT-05 | What do `level`, `pathstring`, `path`, `subcategories`, and `path_detail` contain? The schema gives no description or format for them. | API-CAT-003, API-CAT-006, API-CAT-011 | Open |
 | OQ-ACAT-06 | What happens to the sub-categories and parts of a deleted category for each combination of `delete_parts` and `delete_child_categories`? Neither the schema nor the documentation describes the flags. | API-CAT-015 | Resolved: see the API-CAT-015 table. `delete_child_categories` deletes the whole sub-tree; `delete_parts` deletes the parts of every category being deleted; kept records move to the deleted category's parent. Every `DELETE` returns 204. Local 1.6.3, confirmed by user (2026-10-31). |
-| OQ-ACAT-07 | With `delete_parts=true`, deleting a category also deletes its **active** parts, but `DELETE /api/part/{id}/` rejects an active part with 400 (OQ-PART-02). Is this difference intended? Observed on local 1.6.3 (2026-10-31). | API-CAT-015 | Open |
+| OQ-ACAT-07 | With `delete_parts=true`, deleting a category also deletes its **active** parts, but `DELETE /api/part/{id}/` rejects an active part with 400 (OQ-PART-02). Is this difference intended? Observed on local 1.6.3 (2026-10-31). | API-CAT-015, API-CAT-017 | Resolved as an application finding, confirmed by the user (2026-11-01): active parts must not be deleted by a category delete (DEF-15). API-CAT-015 now uses inactive parts; API-CAT-017 asserts the documented rule. |

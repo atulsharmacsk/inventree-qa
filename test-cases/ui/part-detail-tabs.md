@@ -208,9 +208,9 @@ Covers the tabs on the part detail page: Stock, Allocated, BOM, Build Orders, Pa
   2. Try to add a BOM item.
   3. Try to edit the existing BOM item.
   4. Try to delete the existing BOM item.
-- **Expected result:** None of the changes is made; the BOM still has its original single item. See OQ-TAB-07 for how the restriction is shown.
+- **Expected result:** The *BOM* tab shows a "Part is Locked" alert. *Edit BOM* and the BOM row actions (edit, delete) are not offered, so no item can be added, edited, or deleted. The BOM still has its original single item. The alert text is not asserted.
 - **Requirements:** REQ-TAB-19
-- **Source:** `docs:part/#locked-parts`
+- **Source:** `docs:part/#locked-parts`; OQ-TAB-07 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Build Orders
 
@@ -269,9 +269,9 @@ Covers the tabs on the part detail page: Stock, Allocated, BOM, Build Orders, Pa
 - **Steps:**
   1. Open the part's *Parameters* tab.
   2. Try to add, edit, and delete a parameter.
-- **Expected result:** None of the changes is made; the part still has its original parameter and value. See OQ-TAB-07 for how the restriction is shown.
+- **Expected result:** The *Parameters* tab shows a "Part is Locked" alert. *Add Parameters* and the parameter row actions (edit, delete) are not offered. The part still has its original parameter and value. The alert text is not asserted.
 - **Requirements:** REQ-TAB-19
-- **Source:** `docs:part/#locked-parts`
+- **Source:** `docs:part/#locked-parts`; OQ-TAB-07 (local 1.6.3, confirmed by user, 2026-10-31)
 
 ## Variants
 
@@ -432,5 +432,5 @@ All 25 requirements are covered by at least one case.
 | OQ-TAB-04 | Where is the generated test key shown in the interface? | UI-TAB-026 | Open |
 | OQ-TAB-05 | Is the *Test Templates* tab hidden for non-testable parts? The documentation says the *Test Results* tab is, but does not say the same for *Test Templates*. | UI-TAB-025 | Open |
 | OQ-TAB-06 | Is the tab labelled *Allocated* or *Allocations*? The documentation uses both. | UI-TAB-001, UI-TAB-010 | Open |
-| OQ-TAB-07 | How is a blocked change on a locked part shown (controls hidden or disabled, or an error on submit)? | UI-TAB-013, UI-TAB-018 | Open |
+| OQ-TAB-07 | How is a blocked change on a locked part shown (controls hidden or disabled, or an error on submit)? | UI-TAB-013, UI-TAB-018 | Resolved: with `PART_ENABLE_LOCKING` on, the *BOM* and *Parameters* tabs of a locked part show a "Part is Locked" alert and hide add, edit, and delete; the API also rejects such changes with 400. Local 1.6.3, confirmed by user (2026-10-31, option A: alert wording not asserted). |
 | OQ-TAB-08 | Which setting controls parameter unit validation, and is it enabled by default? | UI-TAB-016 | Open |

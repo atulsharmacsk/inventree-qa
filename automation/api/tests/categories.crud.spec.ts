@@ -284,7 +284,7 @@ test.describe('Part Categories CRUD', () => {
         annotation: {
           type: 'issue',
           description:
-            'Application finding OQ-ACAT-03: the server returns 400 without delete_parts and delete_child_categories, which the schema does not list',
+            'DEF-06 (OQ-ACAT-03): the server returns 400 without delete_parts and delete_child_categories, which the schema does not list',
         },
       },
       async ({ categories }) => {
@@ -325,12 +325,13 @@ test.describe('Part Categories CRUD', () => {
         parts,
       }) => {
         const { grandparent, target, child, partInT, partInChild } =
-          await test.step('Setup: G, T under G, C under T, part X in T, part Y in C', async () => {
+          await test.step('Setup: G, T under G, C under T, inactive part X in T, inactive part Y in C', async () => {
             const grandparent = await categories.createOrFail(newCategory());
             const target = await categories.createOrFail(newCategory({ parent: grandparent.pk }));
             const child = await categories.createOrFail(newCategory({ parent: target.pk }));
-            const partInT = await parts.createOrFail(newPart({ category: target.pk }));
-            const partInChild = await parts.createOrFail(newPart({ category: child.pk }));
+            // Inactive, so the flag behaviour is checked apart from DEF-15 (API-CAT-017).
+            const partInT = await parts.createOrFail(newPart({ category: target.pk, active: false }));
+            const partInChild = await parts.createOrFail(newPart({ category: child.pk, active: false }));
             return { grandparent, target, child, partInT, partInChild };
           });
 
@@ -370,6 +371,38 @@ test.describe('Part Categories CRUD', () => {
         }
       });
     }
+
+    // Expected to fail until a category delete stops removing active parts; turns red once fixed.
+    test.fail(
+      'API-CAT-017: deleting a category with delete_parts=true does not delete an active part',
+      {
+        annotation: {
+          type: 'issue',
+          description:
+            'DEF-15 (OQ-ACAT-07): the category delete returns 204 and deletes the active part, although DELETE /api/part/{id}/ rejects an active part',
+        },
+      },
+      async ({ categories, parts }) => {
+        const { category, part } = await test.step('Setup: category T with active part X', async () => {
+          const category = await categories.createOrFail(newCategory());
+          const part = await parts.createOrFail(newPart({ category: category.pk }));
+          return { category, part };
+        });
+
+        const response =
+          await test.step('DELETE /api/part/category/{T}/ with delete_parts=true and delete_child_categories=false', async () => {
+            return await categories.delete(category.pk, { delete_parts: true, delete_child_categories: false });
+          });
+
+        await test.step('Check the delete is rejected with a 4xx and X still exists and is active', async () => {
+          expect(response.status()).toBeGreaterThanOrEqual(400);
+          expect(response.status()).toBeLessThan(500);
+          const read = await parts.get(part.pk);
+          expect(read.status()).toBe(200);
+          expect(((await read.json()) as Part).active).toBe(true);
+        });
+      },
+    );
 
     test('API-CAT-016: operations on a category that does not exist', async ({ categories }) => {
       const missingId = await test.step('Setup: create and delete a category to get an ID that no longer exists', async () => {

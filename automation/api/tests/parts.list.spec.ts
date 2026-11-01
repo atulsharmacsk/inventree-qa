@@ -102,7 +102,7 @@ test.describe('Parts list', () => {
       {
         annotation: {
           type: 'issue',
-          description: 'Application finding OQ-LIST-02: without limit the server returns a bare array, not the documented paginated object',
+          description: 'DEF-04 (OQ-LIST-02): without limit the server returns a bare array, not the documented paginated object',
         },
       },
       async ({ parts, categories }) => {
@@ -231,7 +231,7 @@ test.describe('Parts list', () => {
       {
         annotation: {
           type: 'issue',
-          description: 'Application finding OQ-LIST-06: with the default cascade=true, category=null returns every part',
+          description: 'DEF-05 (OQ-LIST-06): with the default cascade=true, category=null returns every part',
         },
       },
       async ({ parts, categories }) => {

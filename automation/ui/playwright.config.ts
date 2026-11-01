@@ -16,6 +16,7 @@ export default defineConfig({
   // Tables show a spinner first, and the demo or a fresh CI instance can take several seconds to fill them.
   expect: { timeout: 10_000 },
   // Redacts session cookies, CSRF tokens, auth headers, and the password before the HTML report copies traces.
+  globalSetup: '../shared/clear-allure-results.ts',
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

@@ -72,24 +72,12 @@ export class ModalFormComponent {
 
   /** Submits and returns the first matching response, so specs can check what the server did. */
   protected async submitAndWait(path: RegExp, methods: HttpMethod[]): Promise<Response> {
-    const matches = (url: string, method: string): boolean => path.test(new URL(url).pathname) && (methods as string[]).includes(method);
-    const saved = this.page.waitForResponse((response) => matches(response.url(), response.request().method()));
-    // A dispatched click is not blocked by the "First Use Tour" toast covering Submit.
-    // Just after a related-field option is chosen, a click can be ignored; click again until the request starts.
-    for (let attempt = 1; ; attempt++) {
-      const sent = this.page.waitForRequest((request) => matches(request.url(), request.method()), {
-        timeout: SUBMIT_REQUEST_TIMEOUT,
-      });
-      await this.submitButton.dispatchEvent('click');
-      try {
-        await sent;
-        return await saved;
-      } catch (error) {
-        if (attempt >= SUBMIT_ATTEMPTS) throw error;
-      }
-    }
+    const saved = this.page.waitForResponse(
+      (response) => path.test(new URL(response.url()).pathname) && (methods as string[]).includes(response.request().method()),
+    );
+    // A dispatched click is not blocked by the "First Use Tour" toast covering Submit and does not depend on focus,
+    // which a related-field picker can take back just after an option is chosen.
+    await this.submitButton.dispatchEvent('click');
+    return saved;
   }
 }
-
-const SUBMIT_REQUEST_TIMEOUT = 5_000;
-const SUBMIT_ATTEMPTS = 3;

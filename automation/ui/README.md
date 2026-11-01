@@ -46,7 +46,7 @@ These generated aria-labels are an internal naming convention of InvenTree's own
 
 ## Known Behaviors
 
-- Tests run with one worker. With two or more, the local Docker instance stops answering some requests (for example `/api/user/me/`) and the front-end falls back to the login page.
+- Workers default to 2. The local Docker instance sometimes stops answering requests (for example `/api/user/me/`) and the front-end falls back to the login page; a test then times out waiting for its page. Seen with 2+ workers (Run B) and once with 1 worker (full run, 2026-10-31: UI-TAB-018, passed 2 of 2 when rerun). Use `WORKERS=1` if it repeats; it is an environment issue, not a test defect.
 - A "First Use Tour available" toast can cover the form's Submit button. Forms are submitted by keyboard so the tests do not start or dismiss the tour for the shared user.
 - The part Delete action is disabled while a part is active; cleanup deactivates (and unlocks) parts before deleting them, newest first so variants go before their template.
 - Only `*.settings.spec.ts` files may change a global setting, through a fixture that restores it, in a `settings` project that runs after all other tests and only on LOCALHOST. UI-ATTR-017 reads `PART_ENABLE_LOCKING` and skips itself when it is off.
@@ -60,7 +60,8 @@ These generated aria-labels are an internal naming convention of InvenTree's own
 | UI-CREATE-001, UI-CREATE-003, UI-CREATE-005, UI-CREATE-013 | Passed |
 | UI-ATTR-008, UI-ATTR-012, UI-ATTR-016, UI-ATTR-017 | Passed |
 | UI-TAB-005, UI-TAB-006, UI-TAB-009, UI-TAB-011, UI-TAB-015, UI-TAB-019 (`part.tabs.spec.ts`) | Passed (per the Run D plan entry; not re-run in this update) |
-| UI-TAB-013, UI-TAB-018 | Skipped (`fixme`, blocked by OQ-TAB-07) |
+| UI-TAB-013, UI-TAB-018 (2026-10-31) | Passed: a locked part's BOM and Parameters tabs show "Part is Locked" and offer no add, edit, or delete; data unchanged |
+| Full UI suite (2026-10-31, `refactoring-2`, 1 worker, no retries) | 29 passed, 1 failed (UI-TAB-018: browser logged out, see Known Behaviors; passed 2 of 2 on rerun); no test records left |
 | UI-IMPORT-007 (2026-10-31) | Passed (3 of 3 repeats): the row with an unknown category is in error with a `category` error; the valid row has none; no part is created |
 | UI-IMPORT-008 (2026-10-31, role `ENGINEER`) | Expected failure (`test.fail`, DEF-13): a non-staff user is offered Import from File and the session is created (201) |
 | UI-ATTR-013 (2026-10-31): BOM, purchase order, sales order, and stock location forms (4 tests) | Passed: the part picker offers the active control part and not the inactive part |

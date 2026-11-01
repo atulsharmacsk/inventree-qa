@@ -95,12 +95,9 @@ test.describe('Part creation', () => {
 
     await test.step('Open Parts > Add Parts > Import from File, upload the CSV, and submit', async () => {
       await partsList.goto();
-      expect(await partsList.canImportFromFile()).toBe(true);
-      const form = await partsList.openImportForm();
-      await form.upload(partImportCsv([valid, invalid]));
-      const response = await form.submit();
-      expect(response.status()).toBe(201);
-      importSessions.track(((await response.json()) as { pk: number }).pk);
+      const response = await partsList.importFile(partImportCsv([valid, invalid]));
+      await importSessions.trackFrom(response);
+      expect(response?.status(), 'Import from File must be offered to a staff user').toBe(201);
     });
 
     await test.step('Accept the suggested column mapping and wait for the rows', async () => {
@@ -136,28 +133,22 @@ test.describe('Part import without staff status', () => {
       annotation: {
         type: 'issue',
         description:
-          'Application finding OQ-CREATE-06 (DEF-13): a non-staff user with Part add and change can create a part import session (201); the docs require staff status',
+          'DEF-13 (OQ-CREATE-06): a non-staff user with Part add and change can create a part import session (201); the docs require staff status',
       },
     },
     async ({ partsList, importSessions }) => {
-      const file = partImportCsv();
-
-      const offered = await test.step('Open Parts > Add Parts as a non-staff user with Part create and change', async () => {
-        await partsList.goto();
-        return await partsList.canImportFromFile();
-      });
-
-      const status = await test.step('If Import from File is offered, upload a one-row CSV and submit', async () => {
-        if (!offered) return undefined;
-        const form = await partsList.openImportForm();
-        await form.upload(file);
-        const response = await form.submit();
-        if (response.status() === 201) importSessions.track(((await response.json()) as { pk: number }).pk);
-        return response.status();
-      });
+      const response =
+        await test.step('Open Parts > Add Parts as a non-staff user and, if Import from File is offered, upload a one-row CSV and submit', async () => {
+          await partsList.goto();
+          return await partsList.importFile(partImportCsv());
+        });
+      await importSessions.trackFrom(response);
 
       await test.step('Check the user cannot start an import (not offered, or rejected by the server)', async () => {
-        expect(status === undefined || status >= 400, `Import from File offered: ${offered}; server status: ${status}`).toBe(true);
+        const status = response?.status();
+        expect(status === undefined || status >= 400, `Import from File offered: ${response !== undefined}; server status: ${status}`).toBe(
+          true,
+        );
       });
     },
   );

@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../cleanup';
+import { deleteEach } from '../cleanup';
 import type { Company, NewCompany } from '../models';
 
 /** Sends requests to /api/company/ and remembers the companies a test creates. */
@@ -36,13 +36,7 @@ export class CompanyService {
 
   /** Deletes only the companies this test created (newest first) and returns any failures. */
   async deleteCreated(): Promise<string[]> {
-    const failures: string[] = [];
-    for (const id of [...this.createdIds].reverse()) {
-      const response = await deleteWithRetry(() => this.delete(id));
-      if (response.status() !== 204 && response.status() !== 404) {
-        failures.push(`Deleting company ${id} returned ${response.status()}`);
-      }
-    }
+    const failures = await deleteEach([...this.createdIds].reverse(), 'company', (id) => this.delete(id));
     this.createdIds = [];
     return failures;
   }

@@ -456,8 +456,7 @@ test.describe('Relational integrity', () => {
         {
           annotation: {
             type: 'issue',
-            description:
-              'Application finding OQ-REL-06: the API accepts this request for an inactive part (201), while the UI hides inactive parts',
+            description: 'DEF-02 (OQ-REL-06): the API accepts this request for an inactive part (201), while the UI hides inactive parts',
           },
         },
         async ({ parts, stockItems, stockLocations, bomItems, companies, supplierParts, purchaseOrders, salesOrders }) => {

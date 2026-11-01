@@ -143,11 +143,8 @@ test.describe('Part detail view tabs', () => {
       });
     });
 
-    test('UI-TAB-013: BOM of a locked assembly cannot be changed', async ({ parts, bomItems, settings, partDetail }) => {
-      const lockingEnabled = await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/', async () => {
-        return await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
-      });
-      test.skip(!lockingEnabled, 'UI-TAB-013 needs part locking (PART_ENABLE_LOCKING), which is disabled on this instance');
+    test('UI-TAB-013: BOM of a locked assembly cannot be changed', async ({ parts, bomItems, requireSetting, partDetail }) => {
+      await requireSetting('PART_ENABLE_LOCKING');
       const quantity = 2;
 
       const { assembly, component } =
@@ -210,11 +207,8 @@ test.describe('Part detail view tabs', () => {
       });
     });
 
-    test('UI-TAB-018: parameters of a locked part cannot be changed', async ({ parts, parameters, settings, partDetail }) => {
-      const lockingEnabled = await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/', async () => {
-        return await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
-      });
-      test.skip(!lockingEnabled, 'UI-TAB-018 needs part locking (PART_ENABLE_LOCKING), which is disabled on this instance');
+    test('UI-TAB-018: parameters of a locked part cannot be changed', async ({ parts, parameters, requireSetting, partDetail }) => {
+      await requireSetting('PART_ENABLE_LOCKING');
       const value = uniqueName('value');
 
       const { part, template } = await test.step(`Setup: part with one parameter (${value}), then PATCH locked=true`, async () => {

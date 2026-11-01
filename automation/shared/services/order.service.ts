@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../cleanup';
+import { deleteEach } from '../cleanup';
 import { DEFAULT_PAGE_LIMIT, type NewOrder, type NewOrderLine, type Order, type OrderKind, type OrderLine, type Page } from '../models';
 
 /** Sends requests to /api/order/po/ or /api/order/so/ and their line items, and remembers the orders a test creates; lines are deleted with their order. */
@@ -47,13 +47,7 @@ export class OrderService {
 
   /** Deletes only the orders this test created and returns any failures. */
   async deleteCreated(): Promise<string[]> {
-    const failures: string[] = [];
-    for (const id of [...this.createdIds].reverse()) {
-      const response = await deleteWithRetry(() => this.delete(id));
-      if (response.status() !== 204 && response.status() !== 404) {
-        failures.push(`Deleting ${this.kind} order ${id} returned ${response.status()}`);
-      }
-    }
+    const failures = await deleteEach([...this.createdIds].reverse(), `${this.kind} order`, (id) => this.delete(id));
     this.createdIds = [];
     return failures;
   }

@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../cleanup';
+import { deleteEach } from '../cleanup';
 import { DEFAULT_PAGE_LIMIT, type NewSupplierPart, type Page, type SupplierPart, type SupplierPartFilters } from '../models';
 
 /** Sends requests to /api/company/part/ and removes the supplier parts of the parts a test registers. */
@@ -62,12 +62,8 @@ export class SupplierPartService {
         failures.push(`Listing supplier parts of part ${part} returned ${response.status()}`);
         continue;
       }
-      for (const item of ((await response.json()) as Page<SupplierPart>).results) {
-        const deleted = await deleteWithRetry(() => this.delete(item.pk));
-        if (deleted.status() !== 204 && deleted.status() !== 404) {
-          failures.push(`Deleting supplier part ${item.pk} returned ${deleted.status()}`);
-        }
-      }
+      const items = ((await response.json()) as Page<SupplierPart>).results;
+      failures.push(...(await deleteEach(items.map((item) => item.pk), 'supplier part', (id) => this.delete(id))));
     }
     this.partIds = [];
     return failures;
