@@ -4,6 +4,8 @@ This submission contains quality-engineering instructions, manual test case docu
 
 ## Structure
 
+This repository root is the `submission/` folder from the brief. It keeps every required item (`README.md`, `agents/`, `test-cases/ui-manual-tests.md`, `test-cases/api-manual-tests.md`, `automation/ui/`, `automation/api/`, `video/`) and adds the items listed under *Additions beyond the brief*.
+
 - `agents/` indexes the agent artifacts required by the brief: `agents.md` (custom agent definitions), `prompts.md` (phase prompts and how to run them), and `system-instructions.md` (instruction files). All point to the files in `.github/`.
 - `.github/` contains the GitHub Copilot agent configuration:
   - `copilot-instructions.md`: shared scope and rules applied to every request
@@ -15,6 +17,31 @@ This submission contains quality-engineering instructions, manual test case docu
 - `automation/ui/` contains browser-based checks with a one-time login setup.
 - `automation/shared/` contains TypeScript source used by both projects (API token handling, part and category API services, models, test-name helper, cleanup annotations, redaction patterns). It has no `package.json`; each project compiles it with its own dependencies, so the two projects stay separate npm packages.
 - `video/` holds [video-link.txt](video/video-link.txt), the link to the demo recording ([Google Drive](https://drive.google.com/file/d/12mvu2Ke2l37gLew5iqu-ywI1ojrl-Q2h/view?usp=sharing), about 45 minutes, 1080p MP4, 695 MB). Google Drive may show a virus-scan warning because of the file size; choose *Download anyway*.
+
+### Additions beyond the brief
+
+The layout was extended so the framework can grow without duplicating code:
+
+- `automation/shared/`: code used by both the UI and API projects (services, models, auth, cleanup, redaction), so a new resource or role is added once.
+- `.github/`: the CI workflow and its startup script, plus the agent instructions, custom agent, and prompts that `agents/` indexes.
+- `test-cases/ui/`, `test-cases/api/`, and `test-cases/defects.md`: one file per feature area behind the two required index files, and the confirmed defect log.
+- `PROBLEM_STATEMENTS/`: the assignment brief as received.
+- `Demo_Chat_and Token_Usage.txt`: agent chat and token usage from the demo session.
+- `Solution Improving Test Coverage and Risk Management for an Insurance.pdf`: the written solution document.
+
+## Framework Features
+
+- **Layered design:** specs → fixtures → services (API) or page objects and components (UI) → models, factories, and checks. `npm run lint:specs` fails the build if a spec calls `page`, `request`, or `waitForTimeout` directly, or commits `.only`.
+- **One codebase, two targets:** `ENV=LOCALHOST` or `ENV=REMOTE` switches between the local Docker instance and the public demo; tests that change global settings run on LOCALHOST only.
+- **Roles in code:** `test.use({ role })` runs a test as `SUPERUSER`, `READER`, or `ENGINEER`; each account is checked against its role when it logs in, and a role without credentials is skipped with a reason.
+- **Secure auth:** API tokens are requested per worker at runtime and revoked afterwards; no credentials in source.
+- **Test-owned data:** factories create uniquely named records, and each fixture deletes only what its test created, in dependency order, with retries; anything left behind is reported as a `cleanup` annotation.
+- **Contract checks:** API responses are validated against JSON schemas taken from the API schema, with known schema defects handled explicitly.
+- **Data-driven tests:** tables drive variants (part flags, field limits, delete flags, part pickers), one test per row.
+- **Known defects stay visible:** confirmed defects are `test.fail` with an `issue` annotation that names the DEF ID, so they turn red once InvenTree fixes them.
+- **Readable reports:** every Arrange, Act, and Assert phase is a `test.step`; API calls attach their request and response; Playwright HTML and Allure 3 reports with history, trends, and flaky detection; screenshots and videos for failed UI tests.
+- **Secret redaction:** global teardown scrubs tokens, cookies, auth headers, and passwords from traces, Allure results, and test output.
+- **Scalable CI:** a throwaway InvenTree per job, configurable `workers`, `retries`, `tags`, and `shards` (1 to 8) with merged reports, a nightly full regression, and typecheck, ESLint, Prettier, and actionlint gates.
 
 ## Setup
 
