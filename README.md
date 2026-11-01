@@ -10,8 +10,9 @@ This repository root is the `submission/` folder from the brief. It keeps every 
 - `.github/` contains the GitHub Copilot agent configuration:
   - `copilot-instructions.md`: shared scope and rules applied to every request
   - `agents/inventree-quality-engineer.agent.md`: the custom agent used for all phases
+  - `agents/inventree-local-setup.agent.md`: the setup agent; select **InvenTree Local Setup** after cloning to be guided through installing, the `.env` files, `ENV=REMOTE` or `LOCALHOST`, a local Docker InvenTree, and a first smoke run
   - `instructions/`: file-specific rules for manual test cases and Playwright tests
-  - `prompts/`: one prompt per phase, run in order as slash commands: `/ui-manual-tests`, `/api-manual-tests`, `/api-automation`, `/ui-automation`, `/review-and-correct`
+  - `prompts/`: one prompt per phase, run in order as slash commands: `/ui-manual-tests`, `/api-manual-tests`, `/api-automation`, `/ui-automation`, `/review-and-correct`; `/local-setup` is separate and can be run first on a fresh clone
 - `test-cases/` contains the manual test cases. `ui-manual-tests.md` and `api-manual-tests.md` are index pages with coverage summaries; the cases are in one file per feature area under `test-cases/ui/` and `test-cases/api/`. `api-automation-tests.md` and `ui-automation-tests.md` give the run order for the automation phases. `defects.md` lists the confirmed application, API contract, and documentation defects (DEF-01 to DEF-17).
 - `automation/api/` contains authenticated API checks. See its README for setup and commands.
 - `automation/ui/` contains browser-based checks with a one-time login setup.
@@ -44,6 +45,19 @@ The layout was extended so the framework can grow without duplicating code:
 - **Scalable CI:** a throwaway InvenTree per job, configurable `workers`, `retries`, `tags`, and `shards` (1 to 8) with merged reports, a nightly full regression, and typecheck, ESLint, Prettier, and actionlint gates.
 
 ## Setup
+
+**Prerequisites:** install these first (npm comes with Node.js).
+
+| Tool | Needed for | Install |
+|---|---|---|
+| [Node.js](https://nodejs.org/) 20.19+, 22.13+, or 24+ (ESLint 10 needs one of these; tested on 24), with npm | Both targets | Installer from nodejs.org, or `winget install OpenJS.NodeJS.LTS` |
+| [Git](https://git-scm.com/downloads) | Cloning the repository | Installer, or `winget install Git.Git` |
+| [VS Code](https://code.visualstudio.com/) with the GitHub Copilot Chat extension | The `/local-setup` agent and prompts; optional with the *Playwright Test for VS Code* extension to run tests from the editor | Installer, or `winget install Microsoft.VisualStudioCode` |
+| [Docker](https://docs.docker.com/get-docker/) (Docker Desktop on Windows or macOS, Docker Engine with the Compose plugin on Linux), running, with port 80 free | `ENV=LOCALHOST` only; `ENV=REMOTE` (the public demo) needs no Docker | Installer, or `winget install Docker.DockerDesktop` |
+
+The Playwright Chromium browser is installed later with `npx playwright install chromium`. Reopen the terminal after installing so the new tools are on the path. On a fresh clone, run `/local-setup` in Copilot Chat to be guided through the steps below.
+
+**What `npm ci` does and does not set up:** it installs Playwright Test, TypeScript, ESLint, Prettier, and Allure from the lockfile in each project, so nothing is installed globally. It does not download the Chromium browser (`npx playwright install chromium`, UI project only), and it does not install VS Code extensions. Opening the folder in VS Code offers the extensions in `.vscode/extensions.json` (Playwright Test for VS Code, GitHub Copilot Chat, ESLint, Prettier); accept the prompt, or run *Extensions: Show Recommended Extensions*. The Playwright extension finds `automation/api/playwright.config.ts` and `automation/ui/playwright.config.ts`; pick the project in its *Select config* menu and run tests from the Testing view. The Playwright MCP server that the Quality Engineer agent uses to inspect the app is not configured by this repository; it is only needed to author new tests, not to run the existing ones.
 
 The API and UI projects are independent npm packages. In each project directory, run `npm ci`. Configure `automation/api/.env` from `.env.example` for API tests. Set `ENV=LOCALHOST` (default, `http://localhost`) or `ENV=REMOTE` (`https://demo.inventree.org`); the URL mapping is in `automation/shared/environments.ts`.
 

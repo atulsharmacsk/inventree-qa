@@ -2,7 +2,9 @@
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 20.19+, 22.13+, or 24+ (includes npm)
+- Git and VS Code (see the root README for install links)
+- Docker, only for `ENV=LOCALHOST` (a local InvenTree instance); not needed for `ENV=REMOTE`
 - An accessible InvenTree instance
 - Playwright Chromium browser
 
