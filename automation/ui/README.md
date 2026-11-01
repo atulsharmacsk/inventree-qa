@@ -25,13 +25,13 @@ Set `ENV=LOCALHOST` (default, `http://localhost`) or `ENV=REMOTE` (`https://demo
 
 ## Authentication
 
-The `setup` project (`tests/auth.setup.ts`) logs in once through the login page and saves the session to `playwright/.auth/user.json`. The `ui` project depends on it and reuses that storage state, so specs never log in. The file holds the session cookie and is git-ignored (`automation/.gitignore`: `/ui/playwright/.auth/`). API setup and cleanup use a separate per-worker token that is revoked when the worker finishes.
+The global setup (`src/global-setup.ts`) logs in once per role through the login API and saves each session to `playwright/.auth/<role>.json`. The `ui` project reuses that storage state, so specs never log in. It is a global setup rather than a setup project, so a sharded run does not list the logins once per shard in the report; a failed login stops the run with an error instead of a failed test. The files hold the session cookie and are git-ignored (`automation/.gitignore`: `/ui/playwright/.auth/`). API setup and cleanup use a separate per-worker token that is revoked when the worker finishes.
 
 ## Structure
 
 | Path | Purpose |
 |---|---|
-| `tests/auth.setup.ts` | One-time login; saves storage state |
+| `src/global-setup.ts` | One-time login per role; saves storage state |
 | `tests/fixtures.ts` | Page objects, components, API services (`parts`, `categories`, `stockItems`, `stockLocations`, `companies`, `supplierParts`, `purchaseOrders`, `salesOrders`, `settings`, `importSessions`), automatic cleanup reported as `cleanup` annotations |
 | `tests/*.spec.ts` | Specs: fixtures, `test.step`, and assertions only (`smoke.spec.ts`, `part.create.spec.ts`, `part.attributes.spec.ts`, `part.tabs.spec.ts`, `part.flow.spec.ts`) |
 | `src/pages/` | `LoginPage`, `PartsListPage` (category Parts panel, Add Parts menu, Import from File), `PartDetailPage` (title, Part Details values, tabs, Part Actions menu: Edit and Delete, Stock tab Add Stock Item), `OrderLineItemsPage` (purchase and sales order Add Line Item), `StockLocationPage` (Add Stock Item) |
