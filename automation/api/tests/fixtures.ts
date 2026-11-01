@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test as base, expect, type APIRequestContext } from '@playwright/test';
 import { requestToken, revokeToken, withApiTokens, type TokenForRole } from '../../shared/auth';
-import { reportCleanup } from '../../shared/cleanup';
+import { useAndCleanUp } from '../../shared/cleanup';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { CategoryService } from '../../shared/services/category.service';
 import { BomItemService } from '../../shared/services/bom-item.service';
@@ -72,16 +72,12 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   },
 
   categories: async ({ authenticatedRequest }, use, testInfo) => {
-    const categories = new CategoryService(authenticatedRequest);
-    await use(categories);
-    reportCleanup(testInfo, await categories.deleteCreated());
+    await useAndCleanUp(new CategoryService(authenticatedRequest), use, testInfo);
   },
 
   // Uses `categories` so Playwright deletes parts before the categories they belong to.
   parts: async ({ authenticatedRequest }, use, testInfo) => {
-    const parts = new PartService(authenticatedRequest);
-    await use(parts);
-    reportCleanup(testInfo, await parts.deleteCreated());
+    await useAndCleanUp(new PartService(authenticatedRequest), use, testInfo);
   },
 
   partsWithAuthorization: async ({ playwright, baseURL }, use, testInfo) => {
@@ -109,9 +105,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   },
 
   stockLocations: async ({ authenticatedRequest }, use, testInfo) => {
-    const stockLocations = new StockLocationService(authenticatedRequest);
-    await use(stockLocations);
-    reportCleanup(testInfo, await stockLocations.deleteCreated());
+    await useAndCleanUp(new StockLocationService(authenticatedRequest), use, testInfo);
   },
 
   // Set up before `parts` and torn down after it, so test records are cleaned up while the setting still applies.
@@ -124,24 +118,18 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   stockItems: async ({ authenticatedRequest, parts, stockLocations }, use, testInfo) => {
     void parts;
     void stockLocations;
-    const stockItems = new StockItemService(authenticatedRequest);
-    await use(stockItems);
-    reportCleanup(testInfo, await stockItems.deleteCreated());
+    await useAndCleanUp(new StockItemService(authenticatedRequest), use, testInfo);
   },
 
   companies: async ({ authenticatedRequest }, use, testInfo) => {
-    const companies = new CompanyService(authenticatedRequest);
-    await use(companies);
-    reportCleanup(testInfo, await companies.deleteCreated());
+    await useAndCleanUp(new CompanyService(authenticatedRequest), use, testInfo);
   },
 
   // Depends on `parts` and `companies` so these links are deleted before the records they point to.
   manufacturerParts: async ({ authenticatedRequest, parts, companies }, use, testInfo) => {
     void parts;
     void companies;
-    const manufacturerParts = new ManufacturerPartService(authenticatedRequest);
-    await use(manufacturerParts);
-    reportCleanup(testInfo, await manufacturerParts.deleteCreated());
+    await useAndCleanUp(new ManufacturerPartService(authenticatedRequest), use, testInfo);
   },
 
   // Also depends on `manufacturerParts` because a supplier part can point to a manufacturer part.
@@ -149,9 +137,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     void parts;
     void companies;
     void manufacturerParts;
-    const supplierParts = new SupplierPartService(authenticatedRequest);
-    await use(supplierParts);
-    reportCleanup(testInfo, await supplierParts.deleteCreated());
+    await useAndCleanUp(new SupplierPartService(authenticatedRequest), use, testInfo);
   },
 
   system: async ({ authenticatedRequest }, use) => {
@@ -166,17 +152,13 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   purchaseOrders: async ({ authenticatedRequest, companies, supplierParts }, use, testInfo) => {
     void companies;
     void supplierParts;
-    const orders = new OrderService(authenticatedRequest, 'po');
-    await use(orders);
-    reportCleanup(testInfo, await orders.deleteCreated());
+    await useAndCleanUp(new OrderService(authenticatedRequest, 'po'), use, testInfo);
   },
 
   salesOrders: async ({ authenticatedRequest, companies, parts }, use, testInfo) => {
     void companies;
     void parts;
-    const orders = new OrderService(authenticatedRequest, 'so');
-    await use(orders);
-    reportCleanup(testInfo, await orders.deleteCreated());
+    await useAndCleanUp(new OrderService(authenticatedRequest, 'so'), use, testInfo);
   },
 });
 

@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../cleanup';
+import { deleteEach } from '../cleanup';
 import type { NewStockLocation, StockLocation } from '../models';
 
 /** False keeps a delete from cascading to stock or sub-locations the test did not create. */
@@ -35,13 +35,7 @@ export class StockLocationService {
 
   /** Deletes only the locations this test created and returns any failures. */
   async deleteCreated(): Promise<string[]> {
-    const failures: string[] = [];
-    for (const id of [...this.createdIds].reverse()) {
-      const response = await deleteWithRetry(() => this.delete(id));
-      if (response.status() !== 204 && response.status() !== 404) {
-        failures.push(`Deleting stock location ${id} returned ${response.status()}`);
-      }
-    }
+    const failures = await deleteEach([...this.createdIds].reverse(), 'stock location', (id) => this.delete(id));
     this.createdIds = [];
     return failures;
   }

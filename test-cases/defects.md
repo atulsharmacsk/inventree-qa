@@ -126,7 +126,7 @@ Application, API contract, and documentation defects found while testing the Inv
 
 | Issue | Seen | Handling |
 |---|---|---|
-| UI sessions drop with 2+ parallel browsers: `/api/user/me/` gets no response and the page falls back to the login screen. | Local Docker instance on a developer machine (Run B) | Use `WORKERS=1` if logouts appear; see `automation/ui/README.md`. |
+| UI sessions drop: `/api/user/me/` gets no response and the page falls back to the login screen, so the test times out waiting for its page. | Local Docker instance: with 2+ parallel browsers (Run B), and once with 1 worker (full UI run, 2026-10-31, UI-TAB-018; passed on rerun) | Use `WORKERS=1` if logouts repeat; see `automation/ui/README.md`. |
 | Part `DELETE` returned 500 twice during parallel cleanup; a retry returned 204. | Local, parallel API run | Not reproduced in later runs. |
 
 ## Pending Confirmation

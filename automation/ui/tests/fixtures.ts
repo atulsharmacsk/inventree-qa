@@ -1,6 +1,6 @@
 import { test as base, expect, type APIRequestContext } from '@playwright/test';
 import { withApiTokens, type TokenForRole } from '../../shared/auth';
-import { reportCleanup } from '../../shared/cleanup';
+import { useAndCleanUp } from '../../shared/cleanup';
 import { withHttpLogging } from '../../shared/http-logging';
 import { credentialsFor, missingRoleMessage, type Role } from '../../shared/roles';
 import { BomItemService } from '../../shared/services/bom-item.service';
@@ -39,6 +39,8 @@ type Fixtures = {
   purchaseOrders: OrderService;
   salesOrders: OrderService;
   settings: SettingsService;
+  /** Skips the test unless a boolean global setting is on, for example `requireSetting('PART_ENABLE_LOCKING')`. */
+  requireSetting: (key: string) => Promise<void>;
   importSessions: ImportSessionService;
   /** Sets a global setting for this test and restores it afterwards; LOCALHOST only, used by `*.settings.spec.ts`. */
   globalSetting: (key: string, value: string) => Promise<void>;
@@ -83,31 +85,23 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   },
 
   categories: async ({ apiRequest }, use, testInfo) => {
-    const categories = new CategoryService(apiRequest);
-    await use(categories);
-    reportCleanup(testInfo, await categories.deleteCreated());
+    await useAndCleanUp(new CategoryService(apiRequest), use, testInfo);
   },
 
   // Depends on `categories` so parts are deleted before the categories that hold them.
   parts: async ({ apiRequest }, use, testInfo) => {
-    const parts = new PartService(apiRequest);
-    await use(parts);
-    reportCleanup(testInfo, await parts.deleteCreated());
+    await useAndCleanUp(new PartService(apiRequest), use, testInfo);
   },
 
   // Depends on `parts` and `stockLocations` so stock is deleted before the parts and locations it belongs to.
   stockItems: async ({ apiRequest, parts, stockLocations }, use, testInfo) => {
     void parts;
     void stockLocations;
-    const stockItems = new StockItemService(apiRequest);
-    await use(stockItems);
-    reportCleanup(testInfo, await stockItems.deleteCreated());
+    await useAndCleanUp(new StockItemService(apiRequest), use, testInfo);
   },
 
   stockLocations: async ({ apiRequest }, use, testInfo) => {
-    const stockLocations = new StockLocationService(apiRequest);
-    await use(stockLocations);
-    reportCleanup(testInfo, await stockLocations.deleteCreated());
+    await useAndCleanUp(new StockLocationService(apiRequest), use, testInfo);
   },
 
   bomItems: async ({ apiRequest }, use) => {
@@ -115,51 +109,47 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
   },
 
   parameters: async ({ apiRequest }, use, testInfo) => {
-    const parameters = new ParameterService(apiRequest);
-    await use(parameters);
-    reportCleanup(testInfo, await parameters.deleteCreated());
+    await useAndCleanUp(new ParameterService(apiRequest), use, testInfo);
   },
 
   settings: async ({ apiRequest }, use) => {
     await use(new SettingsService(apiRequest));
   },
 
+  requireSetting: async ({ settings }, use, testInfo) => {
+    await use(async (key) => {
+      const enabled = await base.step(`Precondition: GET /api/settings/global/${key}/`, async () => settings.isEnabledOrFail(key));
+      const caseId = testInfo.title.split(':')[0];
+      testInfo.skip(!enabled, `${caseId} needs ${key}, which is disabled on this instance`);
+    });
+  },
+
   importSessions: async ({ apiRequest }, use, testInfo) => {
-    const importSessions = new ImportSessionService(apiRequest);
-    await use(importSessions);
-    reportCleanup(testInfo, await importSessions.deleteCreated());
+    await useAndCleanUp(new ImportSessionService(apiRequest), use, testInfo);
   },
 
   companies: async ({ apiRequest }, use, testInfo) => {
-    const companies = new CompanyService(apiRequest);
-    await use(companies);
-    reportCleanup(testInfo, await companies.deleteCreated());
+    await useAndCleanUp(new CompanyService(apiRequest), use, testInfo);
   },
 
   // Depends on `companies` and `parts` so supplier parts are deleted before them.
   supplierParts: async ({ apiRequest, companies, parts }, use, testInfo) => {
     void companies;
     void parts;
-    const supplierParts = new SupplierPartService(apiRequest);
-    await use(supplierParts);
-    reportCleanup(testInfo, await supplierParts.deleteCreated());
+    await useAndCleanUp(new SupplierPartService(apiRequest), use, testInfo);
   },
 
   // Orders depend on what their lines point to, so they are deleted (with their lines) first.
   purchaseOrders: async ({ apiRequest, companies, supplierParts }, use, testInfo) => {
     void companies;
     void supplierParts;
-    const orders = new OrderService(apiRequest, 'po');
-    await use(orders);
-    reportCleanup(testInfo, await orders.deleteCreated());
+    await useAndCleanUp(new OrderService(apiRequest, 'po'), use, testInfo);
   },
 
   salesOrders: async ({ apiRequest, companies, parts }, use, testInfo) => {
     void companies;
     void parts;
-    const orders = new OrderService(apiRequest, 'so');
-    await use(orders);
-    reportCleanup(testInfo, await orders.deleteCreated());
+    await useAndCleanUp(new OrderService(apiRequest, 'so'), use, testInfo);
   },
 
   // Request it before `parts` and other data fixtures, so the original value is restored after their cleanup.

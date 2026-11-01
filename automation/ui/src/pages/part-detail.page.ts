@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { BomItemFormComponent } from '../components/bom-item-form.component';
+import { waitForTableLoaded } from '../components/data-table';
 import { DeleteDialogComponent } from '../components/delete-dialog.component';
 import { ParameterFormComponent } from '../components/parameter-form.component';
 import { PartFormComponent } from '../components/part-form.component';
@@ -149,7 +150,7 @@ export class PartDetailPage {
   /** Waits until the tab's table has finished fetching, so row checks do not run against the loading state. */
   async waitForTable(tab: PartTab): Promise<void> {
     // The Mantine DataTable spinner has no role or label; this class is present only while a fetch is running.
-    await this.tabPanel(tab).locator('.mantine-datatable-loader-fetching').waitFor({ state: 'hidden' });
+    await waitForTableLoaded(this.tabPanel(tab));
   }
 
   /** The page title paragraph, for example "Part: Widget". */

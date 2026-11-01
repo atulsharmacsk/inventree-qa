@@ -1,5 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
-import { ImportSessionFormComponent } from '../components/import-session-form.component';
+import type { Locator, Page, Response } from '@playwright/test';
+import { waitForTableLoaded } from '../components/data-table';
+import { ImportSessionFormComponent, type UploadFile } from '../components/import-session-form.component';
 import { PartFormComponent } from '../components/part-form.component';
 import { ROUTES } from '../models/paths';
 
@@ -61,6 +62,14 @@ export class PartsListPage {
     return form;
   }
 
+  /** Add Parts > Import from File: uploads `file` and submits; returns the server response, or undefined when import is not offered. */
+  async importFile(file: UploadFile): Promise<Response | undefined> {
+    if (!(await this.canImportFromFile())) return undefined;
+    const form = await this.openImportForm();
+    await form.upload(file);
+    return await form.submit();
+  }
+
   async search(text: string): Promise<void> {
     await this.searchInput.fill(text);
     await this.waitForTable();
@@ -68,8 +77,7 @@ export class PartsListPage {
 
   /** Waits until the parts table has finished fetching. */
   async waitForTable(): Promise<void> {
-    // The Mantine DataTable spinner has no role or label; this class is present only while a fetch is running.
-    await this.page.locator('.mantine-datatable-loader-fetching').waitFor({ state: 'hidden' });
+    await waitForTableLoaded(this.page);
   }
 
   row(partName: string): Locator {

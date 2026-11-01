@@ -1,13 +1,10 @@
-import type { NewCategory, NewPart, NewStockItem, NewStockLocation } from '../../shared/models';
 import { uniqueName } from '../../shared/data';
-import type { NewCompany, NewManufacturerPart, NewSupplierPart } from './models';
+import { testDataFactories } from '../../shared/factories';
+import type { NewManufacturerPart, NewSupplierPart } from './models';
 
 export { uniqueName };
 
-/** A valid new company with a unique name. Pass extra fields such as `is_supplier` to add or override them. */
-export function newCompany(extraFields: Partial<NewCompany> = {}): NewCompany {
-  return { name: uniqueName('pw-company'), currency: 'USD', ...extraFields };
-}
+export const { newPart, newCategory, newStockLocation, newStockItem, newCompany } = testDataFactories('pw');
 
 /** A supplier part linking `part` to `supplier`, with a unique SKU. */
 export function newSupplierPart(part: number, supplier: number, extraFields: Partial<NewSupplierPart> = {}): NewSupplierPart {
@@ -21,26 +18,6 @@ export function newManufacturerPart(
   extraFields: Partial<NewManufacturerPart> = {},
 ): NewManufacturerPart {
   return { part, manufacturer, MPN: uniqueName('pw-mpn'), ...extraFields };
-}
-
-/** A valid new stock location with a unique name. */
-export function newStockLocation(extraFields: Partial<NewStockLocation> = {}): NewStockLocation {
-  return { name: uniqueName('pw-location'), ...extraFields };
-}
-
-/** A valid stock item of one unit for `part`. Pass extra fields to override them. */
-export function newStockItem(part: number, extraFields: Partial<NewStockItem> = {}): NewStockItem {
-  return { part, quantity: 1, ...extraFields };
-}
-
-/** A valid new part with a unique name. Pass extra fields to add or override them. */
-export function newPart(extraFields: Partial<NewPart> = {}): NewPart {
-  return { name: uniqueName('pw-part'), ...extraFields };
-}
-
-/** A valid new category with a unique name. Pass extra fields to add or override them. */
-export function newCategory(extraFields: Partial<NewCategory> = {}): NewCategory {
-  return { name: uniqueName('pw-category'), ...extraFields };
 }
 
 /** A unique string of exactly `length` characters: a unique prefix padded with `filler`. */

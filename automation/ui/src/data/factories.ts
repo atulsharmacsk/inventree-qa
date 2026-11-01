@@ -1,17 +1,13 @@
-import {
-  PART_MODEL_TYPE,
-  type NewCategory,
-  type NewCompany,
-  type NewParameterTemplate,
-  type NewPart,
-  type NewStockItem,
-  type NewStockLocation,
-} from '../../../shared/models';
+import { PART_MODEL_TYPE, type NewCompany, type NewParameterTemplate } from '../../../shared/models';
 import { uniqueName } from '../../../shared/data';
+import { testDataFactories } from '../../../shared/factories';
 import type { PartFormInput } from '../models/part';
 import type { UploadFile } from '../components/import-session-form.component';
 
 export { uniqueName };
+
+const shared = testDataFactories('pw-ui');
+export const { newPart, newCategory, newStockLocation, newStockItem } = shared;
 
 export type ImportRow = { name: string; category?: string };
 
@@ -22,28 +18,12 @@ export function partImportCsv(rows: ImportRow[] = [{ name: uniqueName('pw-ui-imp
   return { name: 'parts.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) };
 }
 
-export function newPart(overrides: Partial<NewPart> = {}): NewPart {
-  return { name: uniqueName('pw-ui-part'), ...overrides };
-}
-
-export function newStockItem(part: number, overrides: Partial<NewStockItem> = {}): NewStockItem {
-  return { part, quantity: 1, ...overrides };
-}
-
-export function newCategory(overrides: Partial<NewCategory> = {}): NewCategory {
-  return { name: uniqueName('pw-ui-category'), ...overrides };
-}
-
-export function newStockLocation(overrides: Partial<NewStockLocation> = {}): NewStockLocation {
-  return { name: uniqueName('pw-ui-location'), ...overrides };
-}
-
 export function newSupplier(): NewCompany {
-  return { name: uniqueName('pw-ui-supplier'), currency: 'USD', is_supplier: true };
+  return shared.newCompany({ is_supplier: true }, 'supplier');
 }
 
 export function newCustomer(): NewCompany {
-  return { name: uniqueName('pw-ui-customer'), currency: 'USD', is_customer: true, is_supplier: false };
+  return shared.newCompany({ is_customer: true, is_supplier: false }, 'customer');
 }
 
 /** A part parameter template without units. */

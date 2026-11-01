@@ -267,11 +267,8 @@ test.describe('Part attributes', () => {
     });
   });
 
-  test('UI-ATTR-017: a locked part cannot be deleted', async ({ parts, settings, partDetail }) => {
-    const lockingEnabled = await test.step('Precondition: GET /api/settings/global/PART_ENABLE_LOCKING/', async () => {
-      return await settings.isEnabledOrFail('PART_ENABLE_LOCKING');
-    });
-    test.skip(!lockingEnabled, 'UI-ATTR-017 needs part locking (PART_ENABLE_LOCKING), which is disabled on this instance');
+  test('UI-ATTR-017: a locked part cannot be deleted', async ({ parts, requireSetting, partDetail }) => {
+    await requireSetting('PART_ENABLE_LOCKING');
 
     const part = await test.step('Setup: inactive, locked part with no stock', async () => {
       return await parts.createOrFail(newPart({ active: false, locked: true }));

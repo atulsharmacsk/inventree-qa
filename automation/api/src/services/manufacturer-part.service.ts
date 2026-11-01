@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../../../shared/cleanup';
+import { deleteEach } from '../../../shared/cleanup';
 import { DEFAULT_PAGE_LIMIT, type Page } from '../../../shared/models';
 import type { ManufacturerPart, ManufacturerPartFilters, NewManufacturerPart } from '../models';
 
@@ -45,12 +45,8 @@ export class ManufacturerPartService {
         failures.push(`Listing manufacturer parts of part ${part} returned ${response.status()}`);
         continue;
       }
-      for (const item of ((await response.json()) as Page<ManufacturerPart>).results) {
-        const deleted = await deleteWithRetry(() => this.delete(item.pk));
-        if (deleted.status() !== 204 && deleted.status() !== 404) {
-          failures.push(`Deleting manufacturer part ${item.pk} returned ${deleted.status()}`);
-        }
-      }
+      const items = ((await response.json()) as Page<ManufacturerPart>).results;
+      failures.push(...(await deleteEach(items.map((item) => item.pk), 'manufacturer part', (id) => this.delete(id))));
     }
     this.partIds = [];
     return failures;

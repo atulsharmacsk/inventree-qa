@@ -1,5 +1,5 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
-import { deleteWithRetry } from '../cleanup';
+import { deleteEach } from '../cleanup';
 import {
   DEFAULT_PAGE_LIMIT,
   type NewParameter,
@@ -62,13 +62,7 @@ export class ParameterService {
 
   /** Deletes only the templates this test created (their parameters are deleted with them) and returns any failures. */
   async deleteCreated(): Promise<string[]> {
-    const failures: string[] = [];
-    for (const id of [...this.createdTemplateIds].reverse()) {
-      const response = await deleteWithRetry(() => this.deleteTemplate(id));
-      if (response.status() !== 204 && response.status() !== 404) {
-        failures.push(`Deleting parameter template ${id} returned ${response.status()}`);
-      }
-    }
+    const failures = await deleteEach([...this.createdTemplateIds].reverse(), 'parameter template', (id) => this.deleteTemplate(id));
     this.createdTemplateIds = [];
     return failures;
   }

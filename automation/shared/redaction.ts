@@ -48,3 +48,28 @@ export async function redactTextFiles(folders: Iterable<string>): Promise<void> 
     }
   }
 }
+
+/** The part of JSZip used here; each project passes its own JSZip, because shared/ has no node_modules of its own. */
+export type ZipLibrary = {
+  loadAsync(data: Buffer): Promise<{
+    files: Record<string, { name: string; dir: boolean; async(type: 'nodebuffer'): Promise<Buffer> }>;
+    file(name: string, data: Buffer): unknown;
+    generateAsync(options: { type: 'nodebuffer'; compression: 'DEFLATE' }): Promise<Buffer>;
+  }>;
+};
+
+/** Hides secrets in every text artifact and inside every trace archive below the given folders. */
+export async function redactArtifacts(folders: string[], zipLibrary: ZipLibrary): Promise<void> {
+  await redactTextFiles(folders);
+  for (const tracePath of await findTraceFiles(folders)) {
+    const zip = await zipLibrary.loadAsync(await fs.readFile(tracePath));
+    for (const file of Object.values(zip.files)) {
+      if (file.dir) continue;
+      // latin1 keeps every byte as-is, so screenshots and other binary entries are not damaged.
+      const original = (await file.async('nodebuffer')).toString('latin1');
+      const cleaned = hideSecrets(original);
+      if (cleaned !== original) zip.file(file.name, Buffer.from(cleaned, 'latin1'));
+    }
+    await fs.writeFile(tracePath, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
+  }
+}
