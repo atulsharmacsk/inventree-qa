@@ -12,7 +12,7 @@ An area can be automated only after its manual file is `Drafted` in the index. M
 | 2 | `/ui-manual-tests Part detail view tabs` | ui/part-detail-tabs.md | UI-TAB | part/views/, part/template/, part/test/, concepts/parameters/, manufacturing/bom/ | Done |
 | 3 | `/ui-manual-tests Part attributes` (include edit, activate/deactivate, delete, inactive-part restrictions) | ui/part-attributes.md | UI-ATTR | part/, part/virtual/, part/trackable/, part/consumable/ | Done |
 | 4 | `/ui-manual-tests Part categories` | ui/part-categories.md | UI-CAT | part/#part-category, concepts/parameters/ | Done |
-| 5 | `/ui-manual-tests Units of measure` | ui/units-of-measure.md | UI-UNIT | concepts/units/, part/#units-of-measure | To do |
+| 5 | `/ui-manual-tests Units of measure` | ui/units-of-measure.md | UI-UNIT | concepts/units/, part/#units-of-measure | Done |
 | 6 | `/ui-manual-tests Part revisions` | ui/part-revisions.md | UI-REV | part/revision/ | Done |
 | 1b | `/ui-manual-tests Part creation` (append UI-CREATE-015 cross-functional flow and the duplicate IPN case) | ui/part-creation.md | UI-CREATE | part/create/, concepts/parameters/, part/views/ | Done |
 
@@ -23,11 +23,11 @@ Part attributes is ordered before Part categories because Part CRUD automation (
 | # | Command | Spec file | Cases | Status |
 |---|---|---|---|---|
 | A | `/ui-automation Setup: auth, fixtures, page objects, redaction` | tests/auth.setup.ts, tests/fixtures.ts, tests/smoke.spec.ts | Framework only; smoke checks SMOKE-001, SMOKE-002 | Done (3 passed) |
-| B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005; fixme: 009 (setting), 013 (non-superuser); UI-IMPORT-007 runs (OQ-CREATE-05 resolved, 2026-10-31); UI-IMPORT-008 is `test.fail` with role `ENGINEER` (DEF-13, 2026-10-31); deferred: UI-IMPORT-002, 004 (file upload) | Done (3 passed, 4 fixme) |
+| B | `/ui-automation Part creation P1` | tests/part.create.spec.ts | UI-CREATE-001, 003, 005, 013 (role `READER`); UI-CREATE-009 in `tests/part.settings.spec.ts` (`settings` project, LOCALHOST only); UI-IMPORT-007 runs (OQ-CREATE-05 resolved, 2026-10-31); UI-IMPORT-008 is `test.fail` with role `ENGINEER` (DEF-13, 2026-10-31); deferred: UI-IMPORT-002, 004 (file upload) | Done; all cases run |
 | C | `/ui-automation Part attributes P1` | tests/part.attributes.spec.ts | UI-ATTR-008, 012 (edit form, deactivate), 013 (inactive part not offered by 4 part pickers; OQ-ATTR-05 confirmed 2026-10-31; Stock tab variant is `test.fail`, application finding), 016 (delete inactive part), 017 (skips itself when `PART_ENABLE_LOCKING` is off) | Done (8 passed, 1 expected failure) |
 | D | `/ui-automation Part detail view tabs P1` | tests/part.tabs.spec.ts | UI-TAB-005, 006, 009, 011, 013, 015, 018, 019 (013 and 018 since 2026-10-31, OQ-TAB-07 resolved; they skip when part locking is off) | Done (8 tests) |
 | E | `/ui-automation Cross-functional flow` | tests/part.flow.spec.ts | UI-CREATE-015: create part, add parameter, create stock, verify in category view | Done (1 passed) |
-| F | `/ui-automation <area> P1` | tests/part.<area>.spec.ts | P1 cases of UI-CAT, UI-UNIT, UI-REV as they are drafted | To do |
+| F | `/ui-automation <area> P1` | tests/part.<area>.spec.ts | P1 cases of UI-CAT, UI-UNIT, UI-REV (all three areas are drafted) | To do |
 | G | `/review-and-correct` | - | All | After each run, or once at the end |
 
 ## Framework Layout (Run A)
@@ -58,7 +58,7 @@ Config: a `setup` project that the `ui` project depends on; `trace: 'retain-on-f
 |---|---|
 | Where edit and deactivate cases live | New UI-ATTR area (manual run 3), or append to Part creation |
 | Cross-functional flow case | Add UI-CREATE-015 (manual run 1b) |
-| Server settings (*Create Initial Stock*, `PART_ENABLE_LOCKING`) | Decided (2026-10-31): tests that switch a global setting live in `tests/*.settings.spec.ts`, run in the `settings` project after all `ui` tests, restore the setting through the `globalSetting` fixture, and run on LOCALHOST only. UI-CREATE-009 is automated there |
+| Server settings (*Initial Stock Data*, `PART_ENABLE_LOCKING`) | Decided (2026-10-31): tests that switch a global setting live in `tests/*.settings.spec.ts`, run in the `settings` project after all `ui` tests, restore the setting through the `globalSetting` fixture, and run on LOCALHOST only. UI-CREATE-009 is automated there |
 
 ## Known Constraints
 

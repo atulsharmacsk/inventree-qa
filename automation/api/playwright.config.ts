@@ -14,6 +14,7 @@ export default defineConfig({
   testDir: './tests',
   // The shared demo answers single requests in 4-8 s, and setup plus cleanup count toward the test timeout.
   timeout: 60_000,
+  globalSetup: '../shared/clear-allure-results.ts',
   globalTeardown: './src/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

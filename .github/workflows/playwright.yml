@@ -31,7 +31,7 @@ on:
         type: string
         default: '2'
       shards:
-        description: 'Parallel jobs per project, 1-8 (empty = 1). Splits only tests matching tags; use "." to split all'
+        description: 'Parallel jobs per project, 1-8 (empty = 1). Recommended: LOCALHOST 8 shards with 2 workers; REMOTE leave empty (slow demo server). Splits only tests matching tags; use "." to split all'
         type: string
         default: ''
   # Nightly full regression on a throwaway LOCALHOST instance, split over 4 shards; the workflow runs on the default branch only.

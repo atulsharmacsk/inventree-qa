@@ -80,7 +80,7 @@ test.describe('Edge cases', () => {
       {
         annotation: {
           type: 'issue',
-          description: 'Application finding OQ-EDGE-02: malformed JSON returns 500 (AttributeError) instead of 400',
+          description: 'DEF-07 (OQ-EDGE-02): malformed JSON returns 500 (AttributeError) instead of 400',
         },
       },
       async ({ parts }) => {

@@ -25,6 +25,9 @@ Application, API contract, and documentation defects found while testing the Inv
 | DEF-12 | Demo server returns `pricing_min` / `pricing_max` as numbers and `IPN` as `null`, unlike the schema | P3 | Documentation | API-PART-007, OQ-PART-07 | Handled in `src/checks.ts` | Open |
 | DEF-13 | Non-staff user with Part add and change can import parts | P2 | Application (permissions) | UI-IMPORT-008, OQ-CREATE-06 | `part.create.spec.ts` (`test.fail`, role `ENGINEER`) | Open |
 | DEF-14 | Unknown category in an import row is reported as "Expected pk value, received str" | P3 | Application (error message) | UI-IMPORT-007, OQ-CREATE-05 | Not asserted (message text); UI-IMPORT-007 checks the row error | Open |
+| DEF-15 | Category delete with `delete_parts=true` deletes active parts | P1 | Application (data integrity) | API-CAT-017, OQ-ACAT-07 | `categories.crud.spec.ts` (`test.fail`) | Open |
+| DEF-16 | Documentation describes a *Create Initial Stock* setting and checkbox that the Create Part form does not have | P3 | Documentation | UI-CREATE-009 | UI-CREATE-009 asserts the actual behavior | Open |
+| DEF-17 | First read of `LOGIN_ENFORCE_MFA` on a new database logs out every user | P2 | Application (sessions) | OQ: none; seen in CI UI runs | None (needs a fresh database); worked around in `.github/scripts/start-local-inventree.sh` | Open |
 
 ## Details
 
@@ -122,6 +125,29 @@ Application, API contract, and documentation defects found while testing the Inv
 - **Actual:** The row is correctly marked invalid, but the error is `category: Incorrect type. Expected pk value, received str.`, although a category given by name is accepted when it exists. The message points to the wrong cause.
 - **Confirmed:** by the user, 2026-10-31.
 
+### DEF-15: Category delete with `delete_parts=true` deletes active parts
+- **Severity / kind:** P1, application (data integrity).
+- **Steps:** Create category `T` with an active part `X`. `DELETE /api/part/category/{T id}/` with `{"delete_parts": true, "delete_child_categories": false}`, then `GET /api/part/{X id}/`.
+- **Expected:** `X` is not deleted. `docs:part/#active-parts` requires a part to be made inactive before it can be deleted, and `DELETE /api/part/{id}/` rejects an active part with 400 (API-PART-011).
+- **Actual:** The category delete returns 204 and `X` is deleted (404), along with its stock and other related records.
+- **Impact:** One request can remove any number of active parts, bypassing the protection that the part endpoint and UI enforce.
+- **Confirmed:** by the user, 2026-11-01.
+
+### DEF-16: Documentation describes a *Create Initial Stock* setting and checkbox that the Create Part form does not have
+- **Severity / kind:** P3, documentation.
+- **Documented:** `docs:part/create/#initial-stock`: with the *Create Initial Stock* setting enabled, the user checks *Create Initial Stock* in the form.
+- **Actual:** The setting is named *Initial Stock Data* (`PART_CREATE_INITIAL`). When it is on, the form always shows an *Initial Stock* section with *Quantity* and *Location* fields, and no checkbox; stock is created when a quantity is entered.
+- **Confirmed:** by the user as intended behavior with a documentation defect, 2026-11-01.
+
+### DEF-17: First read of `LOGIN_ENFORCE_MFA` on a new database logs out every user
+- **Severity / kind:** P2, application (sessions).
+- **Steps:** On a new InvenTree database, log in through the web UI (or `/api/auth/v1/auth/login`), then `GET /api/settings/global/LOGIN_ENFORCE_MFA/`, which the web UI also requests on page load. Then `GET /api/auth/v1/auth/session` with the same session.
+- **Expected:** The session stays valid. The setting's default is `False`, so reading it should not change anything.
+- **Actual:** The read creates the setting, and its save hook (enforce MFA) ends every user session: the session check returns 200 before the read and 401 after it. It happens once per database, so long-running instances do not show it.
+- **Impact:** On every new instance, all users are logged out the first time any page loads. In CI, every UI test landed on the login screen and timed out.
+- **Workaround:** `.github/scripts/start-local-inventree.sh` reads the setting once at startup, before anyone logs in.
+- **Confirmed:** by the user, 2026-11-01 (reproduced on a CI-like local 1.6.3 copy, 2026-10-31).
+
 ## Environment Issues (not product defects)
 
 | Issue | Seen | Handling |
@@ -131,4 +157,4 @@ Application, API contract, and documentation defects found while testing the Inv
 
 ## Pending Confirmation
 
-Not yet confirmed as defects, so not listed above: OQ-ACAT-07 (category delete with `delete_parts=true` removes active parts, while `DELETE /api/part/{id}/` rejects an active part), in [categories-crud.md](api/categories-crud.md).
+None.

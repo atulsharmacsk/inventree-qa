@@ -133,19 +133,22 @@ test.describe('Part import without staff status', () => {
       annotation: {
         type: 'issue',
         description:
-          'Application finding OQ-CREATE-06 (DEF-13): a non-staff user with Part add and change can create a part import session (201); the docs require staff status',
+          'DEF-13 (OQ-CREATE-06): a non-staff user with Part add and change can create a part import session (201); the docs require staff status',
       },
     },
     async ({ partsList, importSessions }) => {
-      const response = await test.step('Open Parts > Add Parts as a non-staff user and, if Import from File is offered, upload a one-row CSV and submit', async () => {
-        await partsList.goto();
-        return await partsList.importFile(partImportCsv());
-      });
+      const response =
+        await test.step('Open Parts > Add Parts as a non-staff user and, if Import from File is offered, upload a one-row CSV and submit', async () => {
+          await partsList.goto();
+          return await partsList.importFile(partImportCsv());
+        });
       await importSessions.trackFrom(response);
 
       await test.step('Check the user cannot start an import (not offered, or rejected by the server)', async () => {
         const status = response?.status();
-        expect(status === undefined || status >= 400, `Import from File offered: ${response !== undefined}; server status: ${status}`).toBe(true);
+        expect(status === undefined || status >= 400, `Import from File offered: ${response !== undefined}; server status: ${status}`).toBe(
+          true,
+        );
       });
     },
   );

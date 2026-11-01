@@ -9,21 +9,21 @@ Areas are listed in suggested run order.
 | Area | File | ID prefix | Minimum coverage | Status | P1 | P2 | P3 | Total | Open questions |
 |---|---|---|---|---|---|---|---|---|---|
 | Parts CRUD | [parts-crud.md](api/parts-crud.md) | `API-PART` | Create, retrieve, update, delete | Drafted | 5 | 5 | 2 | 12 | 3 |
-| Part Categories CRUD | [categories-crud.md](api/categories-crud.md) | `API-CAT` | Create, retrieve, update, delete | Drafted | 7 | 6 | 3 | 16 | 3 |
+| Part Categories CRUD | [categories-crud.md](api/categories-crud.md) | `API-CAT` | Create, retrieve, update, delete | Drafted | 8 | 6 | 3 | 17 | 2 |
 | Field-level validation | [field-validation.md](api/field-validation.md) | `API-VAL` | Required, maximum-length, nullable, and read-only fields | Drafted | 6 | 9 | 6 | 21 | 0 |
 | Parts list | [parts-list.md](api/parts-list.md) | `API-LIST` | Filtering, pagination, search | Drafted | 4 | 8 | 4 | 16 | 1 |
 | Relational integrity | [relational-integrity.md](api/relational-integrity.md) | `API-REL` | Category assignment, default locations, supplier linkage, inactive parts | Drafted | 4 | 10 | 5 | 19 | 0 |
 | Edge cases | [edge-cases.md](api/edge-cases.md) | `API-EDGE` | Invalid payloads, unauthorized access, conflict scenarios | Drafted | 6 | 6 | 3 | 15 | 0 |
-| **Total** | | | | | **32** | **44** | **23** | **99** | **7** |
+| **Total** | | | | | **33** | **44** | **23** | **100** | **6** |
 
-Open questions count only those still open (2026-10-31): OQ-PART-01 (partly), 04, 05; OQ-ACAT-04, 05, 07; OQ-LIST-05. None of them blocks an automated test.
+Open questions count only those still open (2026-11-01): OQ-PART-01 (partly), 04, 05; OQ-ACAT-04, 05; OQ-LIST-05. None of them blocks an automated test.
 
 ## Automation Candidates
 
 | Area | Ready | Ready after an open question is resolved |
 |---|---|---|
 | Parts CRUD | API-PART-001, 002, 003, 005, 007, 008, 009, 010, 011 | - |
-| Part Categories CRUD | API-CAT-001, 002, 003, 004, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016 | Application finding (expected failure, `test.fail`): API-CAT-014 without a request body (OQ-ACAT-03) |
+| Part Categories CRUD | API-CAT-001, 002, 003, 004, 005, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016 | Application findings (expected failures, `test.fail`): API-CAT-014 without a request body (OQ-ACAT-03), API-CAT-017 (OQ-ACAT-07, DEF-15) |
 | Field-level validation | API-VAL-001 to 021 (API-VAL-008 `icon` is a format check, OQ-VAL-04) | - |
 | Parts list | API-LIST-001, 002, 003, 005, 006, 007, 008, 010, 011, 012, 013, 014, 015, 016 | Application findings (expected failures, `test.fail`): API-LIST-004 (OQ-LIST-02), API-LIST-009 (OQ-LIST-06) |
 | Relational integrity | API-REL-001 to 015 | Application findings (expected failures, `test.fail`): API-REL-016 to 019 (OQ-REL-06) |

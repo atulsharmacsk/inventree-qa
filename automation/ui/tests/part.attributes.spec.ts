@@ -209,7 +209,7 @@ test.describe('Part attributes', () => {
       annotation: {
         type: 'issue',
         description:
-          "Application finding OQ-ATTR-05: Add Stock Item on an inactive part's Stock tab saves a stock item (201), while every part picker hides inactive parts",
+          "DEF-03 (OQ-ATTR-05): Add Stock Item on an inactive part's Stock tab saves a stock item (201), while every part picker hides inactive parts",
       },
     },
     async ({ parts, stockItems, partDetail }) => {
