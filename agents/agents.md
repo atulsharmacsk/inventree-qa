@@ -5,7 +5,8 @@ The custom agent definitions are in [.github/agents/](../.github/agents/), where
 | Agent | File | Used by | Purpose |
 |---|---|---|---|
 | InvenTree Quality Engineer | [inventree-quality-engineer.agent.md](../.github/agents/inventree-quality-engineer.agent.md) | Every phase prompt in [prompts.md](prompts.md) | Senior quality engineer for the InvenTree Parts module: requirements analysis, UI and API manual test design, Playwright TypeScript API and UI automation, and test validation |
+| InvenTree Local Setup | [inventree-local-setup.agent.md](../.github/agents/inventree-local-setup.agent.md) | Run on its own after cloning | Guides a new user through prerequisites, `npm ci`, the `.env` files, `ENV=REMOTE` or `LOCALHOST`, a local Docker InvenTree, and a first smoke run; it never reads or prints secrets |
 
-The agent file defines the role, context (scope, project layout, local instance), working method, constraints (no secrets, no invented behavior, no weakened assertions, test-owned data only), and output expectations. Its tools are `execute`, `read`, `edit`, `search`, `web`, `browser`, and the Playwright MCP server (`playwright/*`).
+The Quality Engineer agent file defines the role, context (scope, project layout, local instance), working method, constraints (no secrets, no invented behavior, no weakened assertions, test-owned data only), and output expectations. Its tools are `execute`, `read`, `edit`, `search`, `web`, `browser`, and the Playwright MCP server (`playwright/*`).
 
 To use it, select **InvenTree Quality Engineer** in the Copilot Chat agent picker, then run a prompt such as `/api-automation Part Categories CRUD`. Shared and file-specific rules it follows are listed in [system-instructions.md](system-instructions.md).

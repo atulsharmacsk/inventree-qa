@@ -4,6 +4,10 @@ Version history of the agent, prompts, and instruction files in `.github/`. The 
 
 Versioning: a minor version for a new or changed rule, prompt step, or phase; a major version when the phase order or the set of files changes. Entries before 1.3 were reconstructed from the README correction log, so they list the rules that changed rather than every wording edit.
 
+## 2.0 (2026-11-01)
+
+- New custom agent `InvenTree Local Setup` (`agents/inventree-local-setup.agent.md`) that guides a new user through prerequisites, `npm ci`, the `.env` files, `ENV=REMOTE` or `LOCALHOST`, a local Docker InvenTree (version pinned in the CI workflow), and a first smoke run, plus the `/local-setup` prompt to start it. It checks `.env` files by variable name only and never prints values. The set of files changed, so this is a major version; the other files are unchanged and still match 1.3.
+
 ## 1.3 (2026-10-30)
 
 - Layering rule is now enforced, not only documented: `npm run lint:specs` (`automation/shared/check-spec-layering.mjs`) fails on direct `page.*` or HTTP-client use in specs, raw request fixtures, `waitForTimeout`, and `.only`. The Playwright instructions, agent working method, shared rules, `/api-automation`, `/ui-automation`, and `/review-and-correct` now run it with the typecheck. CI runs it before the tests.

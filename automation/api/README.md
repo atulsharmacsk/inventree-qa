@@ -2,7 +2,8 @@
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 20.19+, 22.13+, or 24+ (includes npm)
+- Docker, only for `ENV=LOCALHOST`; Git and VS Code (see the root README for install links)
 - An accessible InvenTree instance and an account allowed to request API tokens
 
 ## Setup
